@@ -1,0 +1,60 @@
+.subscribe-page {
+  box-sizing: border-box;
+  padding: 40px 24px;
+}
+
+.subscribe-card {
+  box-sizing: border-box;
+  padding: 36px;
+}
+
+.subscribe-header {
+  margin-bottom: 28px;
+}
+
+.subscribe-badge {
+  margin-bottom: 16px;
+  padding: 4px 12px;
+}
+
+.subscribe-title {
+  margin-bottom: 8px;
+}
+
+.subscribe-description {
+  margin: 0;
+}
+
+.subscribe-field {
+  margin-bottom: 24px;
+}
+
+.subscribe-label {
+  margin-bottom: 8px;
+}
+
+.subscribe-prefix {
+  padding: 0 16px;
+}
+
+.subscribe-input {
+  padding: 14px 16px;
+}
+
+.subscribe-help {
+  margin-top: 8px;
+}
+
+.subscribe-button {
+  padding: 14px 20px;
+}
+
+@media (max-width: 640px) {
+  .subscribe-page {
+    padding: 32px 16px;
+  }
+
+  .subscribe-card {
+    padding: 28px 22px;
+  }
+}
