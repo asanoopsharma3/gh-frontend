@@ -1,0 +1,110 @@
+.question-box .quiz-answers-list {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.875rem;
+  width: 100%;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.question-box .quiz-answers-list > li {
+  width: 100%;
+  min-width: 0;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0;
+}
+
+@media (min-width: 640px) {
+  .question-box .quiz-answers-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: stretch;
+    align-content: flex-start;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1.25rem;
+  }
+
+  .question-box .quiz-answers-list > li {
+    flex: 1 1 calc(50% - 0.5rem);
+    max-width: calc(50% - 0.5rem);
+  }
+}
+
+.question-box .quiz-answer-label {
+  display: block;
+  width: 100%;
+  min-height: 3.25rem;
+  height: auto;
+  max-height: none;
+  padding: 0.75rem 1rem;
+  box-sizing: border-box;
+  border-radius: 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(#170324, #170324) padding-box,
+    linear-gradient(to right, #274fc7, #18a6c6) border-box;
+  color: #fff;
+  text-align: center;
+  line-height: 1.5;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  overflow: visible;
+  cursor: pointer;
+  transition: opacity 0.3s ease-in-out, background 0.3s ease-in-out,
+    border-color 0.3s ease-in-out;
+}
+
+.question-box .quiz-answer-text {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.question-box .quiz-answer-label.is-correct {
+  background: green;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.question-box .quiz-answer-label.is-wrong {
+  background: red;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.question-box .quiz-answer-label.is-dimmed {
+  opacity: 0.6;
+}
+
+.question-box .quiz-answer-label.is-disabled {
+  cursor: not-allowed;
+}
+
+@media (max-width: 639px) {
+  .question-box .quiz-answer-label {
+    font-size: 15px;
+    padding: 0.65rem 0.85rem;
+    border-radius: 12px;
+    box-shadow: 0 0 2px 2px white;
+  }
+}
+
+.question-box .question.gradient-border {
+  width: 100%;
+  max-width: 100%;
+}
+
+.question-box .question > div {
+  width: 100%;
+  max-width: 100%;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "../axiosInstance";
 import Swal from "sweetalert2";
 import { useAuth } from "../auth/AuthContext";
+import "./Question.css";
 
 const PREVIEW_QUIZ_QUESTIONS = [
   {
@@ -392,33 +393,29 @@ function Question({ preview = false }) {
           </div>
         </div>
 
-        <ul className="quiz-answers-list flex w-full flex-col gap-3 sm:mt-4 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4">
+        <ul className="quiz-answers-list">
           {q.options.map((opt, i) => {
             const correctIndex = parseInt(q.correctIndex, 10);
-            let bgColor = "#170324";
-
-            if (selected !== null) {
-              if (i === correctIndex) bgColor = "green";
-              else if (i === selected) bgColor = "red";
-            }
+            const isCorrect = selected !== null && i === correctIndex;
+            const isWrong = selected !== null && i === selected && i !== correctIndex;
+            const isDimmed =
+              selected !== null && i !== selected && i !== correctIndex;
 
             return (
-              <li key={i} className="w-full sm:w-[calc(50%-0.5rem)] sm:max-w-[calc(50%-0.5rem)]">
+              <li key={i}>
                 <label
-                  className="quiz-answer-label"
+                  className={[
+                    "quiz-answer-label",
+                    isCorrect ? "is-correct" : "",
+                    isWrong ? "is-wrong" : "",
+                    isDimmed ? "is-dimmed" : "",
+                    selected !== null ? "is-disabled" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
                   onClick={() => handleAnswer(opt, i)}
-                  style={{
-                    background: bgColor,
-                    color: "white",
-                    cursor: selected !== null ? "not-allowed" : "pointer",
-                    border: "2px solid rgba(255,255,255,0.2)",
-                    boxShadow: isMobile ? "0px 0px 2px 2px white" : "none",
-                    transition: "all 0.3s ease-in-out",
-                    opacity:
-                      selected !== null && i !== selected && i !== correctIndex ? 0.6 : 1,
-                  }}
                 >
-                  {opt}
+                  <span className="quiz-answer-text">{opt}</span>
                 </label>
               </li>
             );

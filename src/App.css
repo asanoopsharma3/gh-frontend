@@ -443,7 +443,9 @@ body.plan-banner {
 
 .question-box .wrap ul {
     display: flex;
-    gap: 1rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.875rem;
     flex-wrap: wrap;
     justify-content: center;
     margin-top: 1.25rem;
@@ -456,11 +458,20 @@ body.plan-banner {
 .question-box .wrap ul li {
     width: 100%;
     max-width: 100%;
+    min-width: 0;
+    flex: 0 0 auto;
     box-sizing: border-box;
 }
 
 @media (min-width: 640px) {
+    .question-box .wrap ul {
+        flex-direction: row;
+        align-items: stretch;
+        align-content: flex-start;
+    }
+
     .question-box .wrap ul li {
+        flex: 1 1 calc(50% - 0.5rem);
         width: calc(50% - 0.5rem);
         max-width: calc(50% - 0.5rem);
     }
@@ -472,14 +483,14 @@ body.plan-banner {
     width: 100%;
     min-height: 3.25rem;
     height: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    max-height: none;
+    display: block;
     text-align: center;
-    line-height: 1.45;
+    line-height: 1.5;
     white-space: normal;
     word-break: break-word;
     overflow-wrap: anywhere;
+    overflow: visible;
     padding: 0.75rem 1rem;
     box-sizing: border-box;
     background: linear-gradient(#170324,#170324) padding-box,linear-gradient(to right,#274fc7,#18a6c6) border-box;
@@ -548,7 +559,7 @@ body.plan-banner {
     justify-content: center;
     align-items: center;
     width: 100%;
-    max-width: 380px;
+    max-width: 100%;
     height: auto;
     min-height: 120px;
     font-family: Lato,sans-serif;
