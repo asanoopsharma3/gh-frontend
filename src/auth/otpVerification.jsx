@@ -6,6 +6,7 @@ import { useContext } from "react";
 import { UserContext } from "../context/context";
 import { useEffect } from "react";
 import Swal from 'sweetalert2';
+import { apiUrl } from "../config/api";
 
 
 export default function OtpVerification() {
@@ -37,7 +38,7 @@ export default function OtpVerification() {
 
     try {
       const { data } = await axios.post(
-        "https://ghsuperwinnings.com/api/sms/verify-otp",
+        apiUrl("/sms/verify-otp"),
         { phone: mobile, otp }
       );
 

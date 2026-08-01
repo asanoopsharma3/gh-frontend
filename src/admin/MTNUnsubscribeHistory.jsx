@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { apiUrl } from "../config/api";
 
 export default function MTNUnsubscribeHistory() {
   const [data, setData] = useState([]);
@@ -11,7 +12,7 @@ export default function MTNUnsubscribeHistory() {
   const fetchData = async () => {
     try {
       const res = await axios.get(
-        "https://ghsuperwinnings.com/api/mtn/payment/mtn-unsubscribe"
+        apiUrl("/mtn/payment/mtn-unsubscribe")
       );
 
       setData(res.data.data);

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Search } from "lucide-react";
 import axios from "axios";
 import Swal from "sweetalert2";
+import { apiUrl } from "../../config/api";
 
 export default function Searchnumber() {
   const [inputvalue, setinputvalue] = useState("");
@@ -24,10 +25,10 @@ export default function Searchnumber() {
       setUserData(null);
 
       const res = await axios.post(
-  `https://ghsuperwinnings.com/api/auth/searchbyphone`,
-  { phone: inputvalue },
-  { headers: { "Content-Type": "application/json" } }
-);
+        apiUrl("/auth/searchbyphone"),
+        { phone: inputvalue },
+        { headers: { "Content-Type": "application/json" } }
+      );
 
 
       if (res.data && res.data.data) {

@@ -9,13 +9,9 @@ import {
   RefreshCw,
 } from "lucide-react";
 import "./DashboardPage.css";
+import { ADMIN_API_BASE } from "../config/api";
 
-const API_BASE_URLS = [
-  "/api/admin",
-  "https://ghsuperwinnings.com/api/admin",
-  "https://ghsuperwinnings.com:5000/api/admin",
-  "http://ghsuperwinnings.com:5000/api/admin",
-];
+const API_BASE_URLS = [ADMIN_API_BASE];
 
 const reportTabs = [
   { key: "all", label: "All Status" },

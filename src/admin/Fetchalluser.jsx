@@ -4,13 +4,9 @@ import * as XLSX from "xlsx";
 import { ChevronLeft, ChevronRight, Download, RefreshCw, Search } from "lucide-react";
 import Swal from "sweetalert2";
 import "./DashboardPage.css";
+import { ADMIN_API_BASE } from "../config/api";
 
-const API_BASE_URLS = [
-  "/api/admin",
-  "https://ghsuperwinnings.com/api/admin",
-  "https://ghsuperwinnings.com:5000/api/admin",
-  "http://ghsuperwinnings.com:5000/api/admin",
-];
+const API_BASE_URLS = [ADMIN_API_BASE];
 
 const getAdminData = async (path, config) => {
   let lastError;

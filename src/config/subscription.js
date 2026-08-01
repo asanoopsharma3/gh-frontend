@@ -1,6 +1,6 @@
-export const SITE_URL =
-  import.meta.env.VITE_SITE_URL || window.location.origin;
-export const API_BASE_URL = `${SITE_URL}/api`;
+import { API_BASE_URL, SITE_URL } from "./api";
+
+export { SITE_URL, API_BASE_URL };
 
 export const INITIAL_OFFER_CODE = "9923310010";
 export const TOPUP_OFFER_CODE = "9923310009";

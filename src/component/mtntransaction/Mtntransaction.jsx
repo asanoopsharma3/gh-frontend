@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { Search } from "lucide-react";
 import Swal from "sweetalert2";
+import { apiUrl } from "../../config/api";
 
 const MtntransactionUI = () => {
   const [payments, setPayments] = useState([]);
@@ -18,7 +19,7 @@ const MtntransactionUI = () => {
       setLoading(true);
       const token = localStorage.getItem("token");
       const response1 = await axios.get(
-        "https://ghsuperwinnings.com/api/mtn/payment/status",
+        apiUrl("/mtn/payment/status"),
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -66,7 +67,7 @@ const MtntransactionUI = () => {
       setLoading(true);
       setSearchResult(null);
       const res = await axios.post(
-        "https://ghsuperwinnings.com/api/mtn/details/payment-status",
+        apiUrl("/mtn/details/payment-status"),
         { phone: inputValue },
         { headers: { "Content-Type": "application/json" } }
       );

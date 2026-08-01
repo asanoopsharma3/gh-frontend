@@ -4,15 +4,17 @@ import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import Swal from "sweetalert2";
 import brandLogo from "../assets/image1.png";
+import { ADMIN_API_BASE } from "../config/api";
 import "./AdminLoginPage.css";
 
-const adminLoginUrls = [
-  "https://ghsuperwinnings.com/api/admin/login",
-  "https://ghsuperwinnings.com:5000/api/admin/login",
-  "http://ghsuperwinnings.com:5000/api/admin/login",
-  "/api/admin/login",
-  "/admin-api/login",
-];
+const adminLoginUrls = [`${ADMIN_API_BASE}/login`];
+
+const shouldTryNextLoginUrl = (error) => {
+  const status = error.response?.status;
+  if ([404, 405].includes(status)) return true;
+  // Network/CORS failures have no response — try the next URL (e.g. Vite proxy).
+  return !error.response;
+};
 
 const postAdminLogin = async (payload) => {
   let lastError;
@@ -22,7 +24,7 @@ const postAdminLogin = async (payload) => {
       return await axios.post(url, payload);
     } catch (error) {
       lastError = error;
-      if (![404, 405].includes(error.response?.status)) throw error;
+      if (!shouldTryNextLoginUrl(error)) throw error;
     }
   }
 

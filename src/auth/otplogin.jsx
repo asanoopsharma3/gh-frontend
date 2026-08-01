@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useContext } from "react";
 import { UserContext } from "../context/context";
+import { apiUrl } from "../config/api";
 
 export default function Otplogin() {
   const [mobile, setMobile] = useState("");
@@ -33,10 +34,10 @@ export default function Otplogin() {
 
     try {
       const { data } = await axios.post(
-  "https://ghsuperwinnings.com/api/sms/send-otp",
-  { phone },
-  { withCredentials: true }
-);
+        apiUrl("/sms/send-otp"),
+        { phone },
+        { withCredentials: true }
+      );
 
       setLoading(false);
 

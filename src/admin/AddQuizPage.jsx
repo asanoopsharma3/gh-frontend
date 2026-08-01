@@ -2,9 +2,8 @@ import { useRef, useState } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
 import { FileUp, UploadCloud } from "lucide-react";
+import { ADMIN_API_BASE } from "../config/api";
 import "./AdminDataPages.css";
-
-const ADMIN_API_BASE = "/api/admin";
 
 export default function AddQuizPage() {
   const [file, setFile] = useState(null);
@@ -24,7 +23,7 @@ export default function AddQuizPage() {
     }
 
     const formData = new FormData();
-    formData.append("title", "Super Winnings Quiz");
+    formData.append("title", "npm");
     formData.append("file", file);
 
     setUploading(true);

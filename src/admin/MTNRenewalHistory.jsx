@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { apiUrl } from "../config/api";
 
 export default function MTNRenewalHistory() {
   const [renewals, setRenewals] = useState([]);
@@ -12,7 +13,7 @@ export default function MTNRenewalHistory() {
   const fetchRenewals = async () => {
     try {
       const res = await axios.get(
-        "https://ghsuperwinnings.com/api/mtn/payment/mtn-renewals"
+        apiUrl("/mtn/payment/mtn-renewals")
       );
 
       const data = res.data.data;

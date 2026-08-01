@@ -10,6 +10,7 @@ import {
   X,
 } from "lucide-react";
 import Swal from "sweetalert2";
+import { ADMIN_API_BASE } from "../config/api";
 import "./AdminDataPages.css";
 
 export default function QuizListPage() {
@@ -26,7 +27,7 @@ export default function QuizListPage() {
   const fetchQuizzes = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("https://ghsuperwinnings.com/api/admin/quizzes", { headers });
+      const res = await axios.get(`${ADMIN_API_BASE}/quizzes`, { headers });
       if (res.data.success) setQuizzes(res.data.quizzes || []);
     } catch (err) {
       console.error("Fetch quizzes error:", err);
@@ -60,7 +61,7 @@ export default function QuizListPage() {
 
     try {
       await axios.delete(
-        `https://ghsuperwinnings.com/api/admin/quizzes/${quizId}/questions/${qIndex}`,
+        `${ADMIN_API_BASE}/quizzes/${quizId}/questions/${qIndex}`,
         { headers }
       );
       await fetchQuizzes();
@@ -98,7 +99,7 @@ export default function QuizListPage() {
     try {
       const { quizId, qIndex, q, options, correctIndex } = editData;
       const res = await axios.put(
-        `https://ghsuperwinnings.com/api/admin/quizzes/${quizId}/questions/${qIndex}`,
+        `${ADMIN_API_BASE}/quizzes/${quizId}/questions/${qIndex}`,
         { q, options, correctIndex },
         { headers }
       );
