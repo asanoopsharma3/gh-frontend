@@ -1,4 +1,5 @@
-import { FileText } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, FileText } from "lucide-react";
 import "./Terms.css";
 
 const TERMS_SECTIONS = [
@@ -136,6 +137,10 @@ export default function Terms() {
       <div className="terms-glow-bottom" aria-hidden="true" />
 
       <div className="terms-header">
+        <Link to="/" className="terms-back-btn">
+          <ArrowLeft size={16} />
+          Back to Home
+        </Link>
         <h1>Terms &amp; Conditions</h1>
         <p>
           Welcome to <strong>GHSuperWinnings.com</strong>. By accessing or using the

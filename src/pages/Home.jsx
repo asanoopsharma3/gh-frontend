@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Brain, Coins, Zap } from "lucide-react";
 import {
@@ -75,6 +75,14 @@ function Home() {
           <span className="home-subscribe-btn-title">Please proceed to subscribe</span>
           <span className="home-subscribe-btn-price">GHC 1.00 per day or GHC 1.00 Daily</span>
         </button>
+
+        <p className="home-terms-note">
+          By clicking Subscribe Now, you agree to our{" "}
+          <Link to="/terms" className="home-terms-link">
+            Terms &amp; Conditions
+          </Link>
+          .
+        </p>
       </section>
     </div>
   );

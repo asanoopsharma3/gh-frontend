@@ -152,6 +152,25 @@
   letter-spacing: 0.02em;
 }
 
+.home-terms-note {
+  margin: 0.15rem 0 0;
+  max-width: 22rem;
+  font-size: clamp(0.72rem, 2vw, 0.8rem);
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.home-terms-link {
+  color: #fbbf24;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.home-terms-link:hover {
+  color: #fde68a;
+}
+
 @keyframes home-perk-float {
   0%,
   100% {
