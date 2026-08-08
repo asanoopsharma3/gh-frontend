@@ -4,6 +4,8 @@ export { SITE_URL, API_BASE_URL };
 
 export const INITIAL_OFFER_CODE = "9923310010";
 export const TOPUP_OFFER_CODE = "9923310009";
+export const TOPUP_REQUIRED_MESSAGE =
+  "You have exhausted your 10 set of questions for the day.\nPlease top up to get additional 10 set of questions.";
 export const HE_MOBILE_NUMBER = "99999999999";
 export const CGW_BACKEND_CALLBACK_URL = `${API_BASE_URL}/callback`;
 export const CGW_ENV = import.meta.env.VITE_CGW_ENV || "staging";
@@ -56,6 +58,24 @@ export const normalizeGhanaMsisdn = (phoneNumber) => {
   if (digits.startsWith("233")) return digits;
   if (digits.startsWith("0")) return `233${digits.slice(1)}`;
   return `233${digits}`;
+};
+
+export const LOCAL_SUBSCRIPTION_ENABLED =
+  import.meta.env.DEV && import.meta.env.VITE_LOCAL_SUBSCRIPTION === "true";
+
+export const activateLocalSubscription = async (msisdn, offerCode = INITIAL_OFFER_CODE) => {
+  const response = await fetch(`${API_BASE_URL}/subscription/dev-activate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ msisdn, offerCode }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data?.success || !data?.token) {
+    throw new Error(data?.message || "Local subscription activation failed");
+  }
+
+  return data;
 };
 
 

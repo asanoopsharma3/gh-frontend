@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { Menu, X, Trophy, Box, LifeBuoy, LogOut, User, CircleUserRound } from "lucide-react";
+import { Menu, X, Trophy, Box, LifeBuoy, LogOut, User, CircleUserRound, FileText } from "lucide-react";
 import Logo from "../assets/image1.png";
 import { GrTransaction } from "react-icons/gr";
 import { useAuth } from "../auth/AuthContext";
@@ -45,7 +45,8 @@ export default function Header() {
     });
   };
 
-  const showLeaderboard = isLoggedIn;
+  const showLeaderboard =
+    isLoggedIn || import.meta.env.VITE_LEADERBOARD_PREVIEW === "true";
   return (
     <header className="relative z-50">
       <div className="bg-black text-white flex items-center justify-between px-4 md:px-8 py-3 shadow-lg">
@@ -85,6 +86,13 @@ export default function Header() {
             <LifeBuoy size={18} />
             <Link to="/support" className="text-white transition duration-300">
               SUPPORT
+            </Link>
+          </li>
+
+          <li className="relative group flex items-center gap-1">
+            <FileText size={18} />
+            <Link to="/terms" className="text-white transition duration-300">
+              TERMS
             </Link>
           </li>
 
@@ -139,7 +147,7 @@ export default function Header() {
       {/* ---------------- MOBILE MENU ---------------- */}
       <div
         className={`md:hidden bg-black overflow-hidden transition-all duration-500 ${
-          menuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+          menuOpen ? "max-h-[28rem] opacity-100" : "max-h-0 opacity-0"
         }`}
       >
         <ul className="flex flex-col gap-4 mt-4 pb-4 px-4">
@@ -172,6 +180,13 @@ export default function Header() {
             <LifeBuoy size={18} className="text-white" />
             <Link to="/support" onClick={() => setMenuOpen(false)} className="text-white">
               SUPPORT
+            </Link>
+          </li>
+
+          <li className="flex items-center gap-2">
+            <FileText size={18} className="text-white" />
+            <Link to="/terms" onClick={() => setMenuOpen(false)} className="text-white">
+              TERMS
             </Link>
           </li>
 

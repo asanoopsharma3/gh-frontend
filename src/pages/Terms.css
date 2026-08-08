@@ -1,0 +1,212 @@
+.terms-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: calc(100dvh - 5.5rem);
+  padding: 2rem 1rem 2.5rem;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.terms-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+.terms-glow-top,
+.terms-glow-bottom {
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  filter: blur(120px);
+}
+
+.terms-glow-top {
+  top: -6rem;
+  left: -4rem;
+  width: 18rem;
+  height: 18rem;
+  background: rgba(124, 58, 237, 0.35);
+}
+
+.terms-glow-bottom {
+  right: -4rem;
+  bottom: -6rem;
+  width: 20rem;
+  height: 20rem;
+  background: rgba(219, 39, 119, 0.28);
+}
+
+.terms-header {
+  position: relative;
+  z-index: 1;
+  max-width: 42rem;
+  margin-bottom: 1.1rem;
+  text-align: center;
+}
+
+.terms-header h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-weight: 800;
+  line-height: 1.15;
+  color: #fff;
+  text-shadow: 0 0 18px rgba(163, 10, 137, 0.35);
+}
+
+.terms-header p {
+  margin: 0.55rem 0 0;
+  font-size: clamp(0.85rem, 2.2vw, 0.95rem);
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.terms-header strong {
+  color: #fbbf24;
+  font-weight: 700;
+}
+
+.terms-card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 42rem);
+  padding: 2px;
+  border-radius: 1.1rem;
+  background: linear-gradient(90deg, #3c30db, #a10a89, #3665f8, #f300cc, #3c30db);
+  background-size: 300% 100%;
+  animation: terms-border-flow 8s linear infinite;
+  box-shadow: 0 0 24px rgba(163, 10, 137, 0.3), 0 0 40px rgba(54, 101, 248, 0.18);
+}
+
+.terms-card-inner {
+  padding: 1rem 1.1rem 1.15rem;
+  border-radius: calc(1.1rem - 2px);
+  background: linear-gradient(145deg, rgba(23, 3, 36, 0.96), rgba(10, 10, 18, 0.94));
+  backdrop-filter: blur(8px);
+}
+
+.terms-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f8fafc;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.terms-content {
+  max-height: min(62vh, 42rem);
+  overflow-y: auto;
+  padding-right: 0.35rem;
+  text-align: left;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(251, 191, 36, 0.45) rgba(255, 255, 255, 0.08);
+}
+
+.terms-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.terms-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+}
+
+.terms-content::-webkit-scrollbar-thumb {
+  background: rgba(251, 191, 36, 0.45);
+  border-radius: 999px;
+}
+
+.terms-section + .terms-section {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.terms-section h2 {
+  margin: 0 0 0.45rem;
+  font-size: clamp(0.92rem, 2.4vw, 1rem);
+  font-weight: 700;
+  line-height: 1.35;
+  color: #fbbf24;
+}
+
+.terms-section p {
+  margin: 0 0 0.55rem;
+  font-size: clamp(0.82rem, 2.2vw, 0.92rem);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.terms-section p:last-child {
+  margin-bottom: 0;
+}
+
+.terms-section ul {
+  margin: 0 0 0.55rem;
+  padding-left: 1.15rem;
+}
+
+.terms-section li {
+  margin-bottom: 0.35rem;
+  font-size: clamp(0.82rem, 2.2vw, 0.92rem);
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.terms-section li:last-child {
+  margin-bottom: 0;
+}
+
+.terms-footer {
+  position: relative;
+  z-index: 1;
+  margin-top: 1.25rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.62);
+  text-align: center;
+}
+
+@keyframes terms-border-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 300% 50%;
+  }
+}
+
+@media (max-width: 640px) {
+  .terms-page {
+    min-height: auto;
+    padding: 1.5rem 0.75rem 2rem;
+  }
+
+  .terms-card-inner {
+    padding: 0.85rem 0.9rem 1rem;
+  }
+
+  .terms-content {
+    max-height: none;
+    overflow: visible;
+    padding-right: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terms-card {
+    animation: none;
+  }
+}

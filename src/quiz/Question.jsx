@@ -7,14 +7,14 @@ import "./Question.css";
 
 const PREVIEW_QUIZ_QUESTIONS = [
   {
-    q: "What is the school building programme by Ghanaian diaspora?",
+    q: "Which of these Ghanaian historical events happened EARLIEST: Ghana gained independence from British colonial rule, Ghana hosted the Africa Cup of Nations, Kwame Nkrumah was overthrown in a military coup, Ghana adopted its Fourth Republican Constitution?",
     options: [
-      "Only government builds schools",
-      "Diaspora groups fund classroom construction, furniture and equipment for schools in home communities across Ghana",
-      "Private schools only",
-      "International NGOs replace all public school funding with long multi-line text to stress-test layout on mobile and desktop",
+      "Ghana hosted the Africa Cup of Nations",
+      "Kwame Nkrumah was overthrown in a military coup",
+      "Ghana adopted its Fourth Republican Constitution",
+      "Ghana gained independence from British colonial rule",
     ],
-    correctIndex: "1",
+    correctIndex: "3",
   },
   {
     q: "Which Ghanaian institution regulates mobile network operators and oversees consumer protection, fair competition, and licensing for telecommunications services nationwide?",
@@ -43,13 +43,6 @@ function Question({ preview = false }) {
   const [questionsPerSet, setQuestionsPerSet] = useState(10);
 
   const token = localStorage.getItem("token");
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 640);
-
-  useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < 640);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
 
   const loadPreviewQuestions = useCallback(() => {
     setQuestionsPerSet(PREVIEW_QUIZ_QUESTIONS.length);
@@ -108,15 +101,8 @@ function Question({ preview = false }) {
     }
 
     if (!subscription.canPlay) {
-      await Swal.fire({
-        icon: "info",
-        title: "Top-up Required",
-        text: subscription.message || "A wrong answer locked your next set. Please top up to unlock 10 more questions.",
-        confirmButtonText: "Top up",
-        confirmButtonColor: "#1683f5",
-      });
       localStorage.removeItem("payment_done");
-      navigate("/topup");
+      navigate("/topup", { replace: true });
       return false;
     }
 
@@ -171,14 +157,19 @@ function Question({ preview = false }) {
           return;
         }
 
+        if (err.response.data?.code === "TOPUP_REQUIRED") {
+          localStorage.removeItem("payment_done");
+          navigate("/topup", { replace: true });
+          return;
+        }
+
         await Swal.fire({
           icon: "warning",
-          title: err.response.data?.code === "TOPUP_REQUIRED" ? "Top-up Required" : "Access Denied",
-          text: err.response.data.message || "Please top up to continue.",
-          confirmButtonText: err.response.data?.code === "TOPUP_REQUIRED" ? "Top up" : "OK",
+          title: "Access Denied",
+          text: err.response.data.message || "You cannot access the quiz right now.",
           confirmButtonColor: "#1683f5",
         });
-        navigate(err.response.data?.code === "TOPUP_REQUIRED" ? "/topup" : "/subscribe?fallback=true");
+        navigate("/subscribe?fallback=true");
       } else {
         await Swal.fire({
           icon: "error",
@@ -308,16 +299,8 @@ function Question({ preview = false }) {
         return;
       }
 
-      await Swal.fire({
-        icon: "info",
-        title: "Top-up Required",
-        text: `Your score is ${finalScore}/${questionsPerSet}. One or more answers were wrong, so please top up to unlock the next 10 questions.`,
-        confirmButtonText: "Top up",
-        confirmButtonColor: "#1683f5",
-      });
-
       localStorage.removeItem("payment_done");
-      navigate("/topup");
+      navigate("/topup", { replace: true });
     },
     [
       currentQuestionIndexInSet,
@@ -355,42 +338,39 @@ function Question({ preview = false }) {
     });
   };
 
-  if (loading) return <p className="text-white">Loading quiz...</p>;
-  if (questions.length === 0) return <p className="text-red-500">No quiz available.</p>;
+  if (loading) return <p className="quiz-status-text">Loading quiz...</p>;
+  if (questions.length === 0) return <p className="quiz-status-text quiz-status-error">No quiz available.</p>;
 
   const q = questions[currentQuestionIndexInSet];
 
   return (
-    <div className={`question-box relative ${isMobile ? "mt-2 px-2" : "top-[8px]"}`}>
+    <div className="question-box">
       {preview && (
-        <p className="mb-3 w-full max-w-3xl rounded-lg border border-yellow-400/40 bg-yellow-400/10 px-3 py-2 text-center text-sm text-yellow-100">
-          UI preview — login / payment bypassed. Open <code className="text-yellow-200">/quiz-preview</code>
+        <p className="quiz-preview-banner">
+          UI preview — login / payment bypassed. Open <code>/quiz-preview</code>
         </p>
       )}
-      <div className="w-full flex justify-between mb-2 sm:hidden px-2 mt-1">
-        <p className="font-bold text-white text-base">Score: {score * 10}</p>
-        <p className={`font-bold ${timer <= 5 ? "text-red-500" : "text-white"} text-xl`}>
-          {timer}
-        </p>
-      </div>
 
-      <div className="hidden sm:flex fixed top-4 right-4 flex-col items-center justify-center text-white text-[60px] px-4 py-2 z-50 text-center">
-        <p className="font-semibold border-4 border-green-800 relative top-[140px] shadow-[0px_0px_5px_5px_white] rounded-md p-2">
-          Score: {score * 10}
-        </p>
-      </div>
-
-      <div className="wrap max-w-full mb-2 md:max-w-3xl mx-auto mt-5">
-        <div className="hidden sm:block">
-          <div className="count text-center">
-            <span style={{ color: timer <= 5 ? "red" : "white" }}>{timer}</span>
-          </div>
+      <div className="quiz-stats-bar">
+        <div className="quiz-stat quiz-stat-score">
+          <span className="quiz-stat-label">Score</span>
+          <span className="quiz-stat-value">{score * 10}</span>
         </div>
+        <div className="quiz-stat quiz-stat-progress">
+          <span className="quiz-stat-label">Question</span>
+          <span className="quiz-stat-value">
+            {overallQuestionIndex + 1}/{totalQuestionsInQuiz || questionsPerSet}
+          </span>
+        </div>
+        <div className={`quiz-stat quiz-stat-timer ${timer <= 5 ? "is-urgent" : ""}`}>
+          <span className="quiz-stat-label">Time</span>
+          <span className="quiz-stat-value">{timer}s</span>
+        </div>
+      </div>
 
-        <div className="border mb-4 sm:mb-2">
-          <div className="question gradient-border">
-            <div>{q.q}</div>
-          </div>
+      <div className="quiz-wrap">
+        <div className="quiz-question-card">
+          <p className="quiz-question-text">{q.q}</p>
         </div>
 
         <ul className="quiz-answers-list">
@@ -398,12 +378,12 @@ function Question({ preview = false }) {
             const correctIndex = parseInt(q.correctIndex, 10);
             const isCorrect = selected !== null && i === correctIndex;
             const isWrong = selected !== null && i === selected && i !== correctIndex;
-            const isDimmed =
-              selected !== null && i !== selected && i !== correctIndex;
+            const isDimmed = selected !== null && i !== selected && i !== correctIndex;
 
             return (
-              <li key={i}>
-                <label
+              <li key={i} className="quiz-answer-item">
+                <button
+                  type="button"
                   className={[
                     "quiz-answer-label",
                     isCorrect ? "is-correct" : "",
@@ -414,19 +394,20 @@ function Question({ preview = false }) {
                     .filter(Boolean)
                     .join(" ")}
                   onClick={() => handleAnswer(opt, i)}
+                  disabled={selected !== null}
                 >
                   <span className="quiz-answer-text">{opt}</span>
-                </label>
+                </button>
               </li>
             );
           })}
         </ul>
 
-        <div className="w-full flex justify-center">
+        <div className="quiz-actions">
           <button
             type="button"
             onClick={() => void handleNextQuestion(score)}
-            className="glow-on-hover mt-4 mb-8 px-6 py-3 w-[90%] sm:w-auto"
+            className="glow-on-hover quiz-next-btn"
           >
             {overallQuestionIndex + 1 === totalQuestionsInQuiz ? "FINISH" : "NEXT"}
           </button>

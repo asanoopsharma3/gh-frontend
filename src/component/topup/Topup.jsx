@@ -3,6 +3,7 @@ import Swal from "sweetalert2";
 import { useSearchParams } from "react-router-dom";
 import {
   TOPUP_OFFER_CODE,
+  TOPUP_REQUIRED_MESSAGE,
   isMobileNetworkCandidate,
   startHeSubscription,
 } from "../../config/subscription";
@@ -49,12 +50,12 @@ export default function Topup() {
     <div className="w-full flex justify-center items-center h-[90vh]">
       <div className="bg-black text-white rounded-2xl p-6 text-center w-[480px] h-[440px] flex flex-col justify-center items-center shadow-[0px_0px_5px_0px_white]">
         <h2 className="text-2xl font-bold mb-3 text-sky-400">Topup</h2>
-        <p className="text-gray-200 mb-6">
-          A wrong answer locks the next set. Top up to unlock 10 more questions.
+        <p className="text-gray-200 mb-6 whitespace-pre-line">
+          {TOPUP_REQUIRED_MESSAGE}
         </p>
         <div className="space-y-2 text-yellow-300">
-          <p className="text-white">Top up with GHS 1 and keep playing!</p>
-          <p className="font-bold">100k GHS bumper prize</p>
+          <p className="text-white">Top up with GHC1 and keep playing!</p>
+          <p className="font-bold">100k GHCbumper prize</p>
           <p className="font-bold">Daily prize of 1000 GHS</p>
         </div>
         <div className="flex flex-col gap-4 mt-6 w-full items-center">

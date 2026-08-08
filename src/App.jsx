@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-route
 import Header from './component/Header';
 import Home from './pages/Home';
 import Support from './pages/Support';
+import Terms from './pages/Terms';
 import StartPlay from './auth/startPlay';
 import Question from './quiz/Question';
 import './App.css';
@@ -83,6 +84,7 @@ function Layout() {
           {/* Public Routes */}
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/support" element={<Support />} />
+          <Route path="/terms" element={<Terms />} />
           <Route path="/product" element={<Product />} />
           <Route path="/subscribe" element={<Subscribe />} />
           <Route path="/activation/callback" element={<ActivationCallback />} />
@@ -116,7 +118,11 @@ function Layout() {
             <Route path="/quiz-preview" element={<Question preview />} />
           )}
           <Route path="/purchase/plan" element={<Subscribe />} />
-          <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+          {import.meta.env.VITE_LEADERBOARD_PREVIEW === "true" ? (
+            <Route path="/leaderboard" element={<Leaderboard preview />} />
+          ) : (
+            <Route path="/leaderboard" element={<ProtectedRoute><Leaderboard /></ProtectedRoute>} />
+          )}
         
 
           {/* Admin Login */}

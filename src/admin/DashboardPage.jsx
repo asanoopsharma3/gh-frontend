@@ -192,8 +192,8 @@ export default function DashboardPage({ defaultReport = "all" }) {
       value: summary.renewals || 0,
     },
     {
-      label: "Monthly GHS Amount",
-      value: `GHS ${Number(summary.totalGhsAmount || 0).toFixed(2)}`,
+      label: "Monthly GHCAmount",
+      value: `GHC${Number(summary.totalGhsAmount || 0).toFixed(2)}`,
     },
   ];
 
@@ -333,7 +333,7 @@ export default function DashboardPage({ defaultReport = "all" }) {
                         {row.status || row.rawStatus || "Unknown"}
                       </span>
                     </td>
-                    <td>GHS {Number(row.chargingAmount || 0).toFixed(2)}</td>
+                    <td>GHC{Number(row.chargingAmount || 0).toFixed(2)}</td>
                     <td>{formatDateTime(row.createdAt)}</td>
                   </tr>
                 ))}

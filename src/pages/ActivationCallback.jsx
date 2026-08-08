@@ -27,7 +27,8 @@ export default function ActivationCallback() {
     const isSuccess =
       status === "success" ||
       status === "successful" ||
-      searchParams.get("success") === "true";
+      searchParams.get("success") === "true" ||
+      searchParams.get("subscribed") === "true";
 
     if (isSuccess && token) {
       login(token);

@@ -68,13 +68,6 @@ function StartPlay() {
 
       if (subscription.quizAccessStatus === "topup_required" || !subscription.canPlay) {
         localStorage.removeItem("payment_done");
-        await Swal.fire({
-          icon: "info",
-          title: "Top-up Required",
-          text: "A wrong answer locked your next set. Please top up to unlock 10 more questions.",
-          confirmButtonText: "Top up",
-          confirmButtonColor: "#1683f5",
-        });
         navigate("/topup", { replace: true });
         return;
       }

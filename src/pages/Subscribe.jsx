@@ -4,6 +4,8 @@ import Swal from "sweetalert2";
 import "./Subscribe.css";
 import {
   INITIAL_OFFER_CODE,
+  LOCAL_SUBSCRIPTION_ENABLED,
+  activateLocalSubscription,
   isMobileNetworkCandidate,
   normalizeGhanaMsisdn,
   startHeSubscription,
@@ -15,6 +17,7 @@ export default function Subscribe() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [startingHe, setStartingHe] = useState(false);
   const [showInput, setShowInput] = useState(false);
+  const [activatingLocally, setActivatingLocally] = useState(false);
 
   const fallback = searchParams.get("fallback") === "true";
   const offerCode =
@@ -24,6 +27,11 @@ export default function Subscribe() {
 
   useEffect(() => {
     if (fallback) {
+      setShowInput(true);
+      return;
+    }
+
+    if (LOCAL_SUBSCRIPTION_ENABLED) {
       setShowInput(true);
       return;
     }
@@ -38,7 +46,7 @@ export default function Subscribe() {
     setShowInput(true);
   }, [fallback, offerCode]);
 
-  const handleNheSubmit = () => {
+  const handleNheSubmit = async () => {
     const msisdn = normalizeGhanaMsisdn(phoneNumber);
     if (!msisdn || msisdn.length < 12) {
       Swal.fire({
@@ -51,6 +59,31 @@ export default function Subscribe() {
     }
 
     localStorage.setItem("offerCode", offerCode);
+
+    if (LOCAL_SUBSCRIPTION_ENABLED) {
+      setActivatingLocally(true);
+      try {
+        const result = await activateLocalSubscription(msisdn, offerCode);
+        const params = new URLSearchParams({
+          token: result.token,
+          status: "success",
+          offerCode: result.offerCode || offerCode,
+        });
+        window.location.href = `/activation/callback?${params.toString()}`;
+      } catch (error) {
+        setActivatingLocally(false);
+        Swal.fire({
+          icon: "error",
+          title: "Local Activation Failed",
+          text:
+            error.message ||
+            "Could not activate subscription locally. Check backend ENABLE_LOCAL_SUBSCRIPTION=true.",
+          confirmButtonColor: "#1683f5",
+        });
+      }
+      return;
+    }
+
     startNheSubscription(msisdn, offerCode);
   };
 
@@ -73,6 +106,11 @@ export default function Subscribe() {
           <h1 className="subscribe-title text-3xl font-bold tracking-tight text-white sm:text-4xl">
             Subscribe
           </h1>
+          {LOCAL_SUBSCRIPTION_ENABLED && (
+            <p className="subscribe-dev-note mt-3 rounded-lg border border-yellow-400/40 bg-yellow-400/10 px-3 py-2 text-sm text-yellow-100">
+              Local dev mode: subscription activates directly in your MongoDB without MTN billing.
+            </p>
+          )}
         </div>
 
         <div className="subscribe-field">
@@ -103,9 +141,14 @@ export default function Subscribe() {
         <button
           type="button"
           onClick={handleNheSubmit}
-          className="subscribe-button w-full rounded-xl bg-yellow-400 text-base font-bold text-black shadow-[0_10px_30px_rgba(250,204,21,0.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-yellow-300 focus:outline-none focus:ring-4 focus:ring-yellow-300/30 active:translate-y-0"
+          disabled={activatingLocally}
+          className="subscribe-button w-full rounded-xl bg-yellow-400 text-base font-bold text-black shadow-[0_10px_30px_rgba(250,204,21,0.2)] transition duration-200 hover:-translate-y-0.5 hover:bg-yellow-300 focus:outline-none focus:ring-4 focus:ring-yellow-300/30 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          Proceed to Subscribe
+          {activatingLocally
+            ? "Activating..."
+            : LOCAL_SUBSCRIPTION_ENABLED
+              ? "Activate Locally"
+              : "Proceed to Subscribe"}
         </button>
       </div>
     </div>
