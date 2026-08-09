@@ -156,11 +156,20 @@
 }
 
 .terms-section h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
   margin: 0 0 0.45rem;
   font-size: clamp(0.92rem, 2.4vw, 1rem);
   font-weight: 700;
   line-height: 1.35;
   color: #fbbf24;
+}
+
+.terms-section-icon {
+  flex-shrink: 0;
+  font-size: 1.05em;
+  line-height: 1;
 }
 
 .terms-section p {

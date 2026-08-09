@@ -1,4 +1,6 @@
+import { Link } from "react-router-dom";
 import {
+  ArrowLeft,
   Facebook,
   Headphones,
   Mail,
@@ -67,6 +69,10 @@ export default function SupportContact() {
       <div className="support-contact-glow-bottom" aria-hidden="true" />
 
       <div className="support-contact-header">
+        <Link to="/" className="support-back-btn">
+          <ArrowLeft size={16} />
+          Back to Home
+        </Link>
         <h1>SUPERWINNINGS SUPPORT</h1>
         <p>
           Need help with your subscription or quiz? Reach MTN Ghana support using

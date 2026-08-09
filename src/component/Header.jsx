@@ -89,12 +89,12 @@ export default function Header() {
             </Link>
           </li>
 
-          <li className="relative group flex items-center gap-1">
+          {/* <li className="relative group flex items-center gap-1">
             <FileText size={18} />
             <Link to="/terms" className="text-white transition duration-300">
               TERMS
             </Link>
-          </li>
+          </li> */}
 
           {/* -------- DESKTOP USER DROPDOWN -------- */}
           <li

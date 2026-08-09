@@ -1,4 +1,6 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import e1 from "../product/galexy.jpeg";
 import e2 from "../product/trafic.jpeg";
 import e3 from "../product/speed.jpeg";
@@ -36,6 +38,13 @@ export default function Product() {
       <div className="relative z-10 w-full max-w-7xl">
         {/* Hero Section */}
         <div className="text-center mb-12 animate-fadeIn">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 mb-4 px-3.5 py-1.5 rounded-full border border-white/20 bg-white/10 text-white text-sm font-semibold no-underline transition hover:bg-white/15 hover:border-amber-400/50 hover:text-amber-300"
+          >
+            <ArrowLeft size={16} />
+            Back to Home
+          </Link>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-wide drop-shadow-[0_0_20px_rgba(255,255,255,0.5)] mt-5">
             🎮 SUPERWINNINGS GAMES
           </h1>

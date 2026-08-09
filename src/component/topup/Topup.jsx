@@ -55,8 +55,7 @@ export default function Topup() {
         </p>
         <div className="space-y-2 text-yellow-300">
           <p className="text-white">Top up with GHC1 and keep playing!</p>
-          <p className="font-bold">100k GHCbumper prize</p>
-          <p className="font-bold">Daily prize of 1000 GHS</p>
+          <p className="font-bold">Daily Prize of 250 GHS @ 1 GHS</p>
         </div>
         <div className="flex flex-col gap-4 mt-6 w-full items-center">
           {["MTN"].map((type) => (

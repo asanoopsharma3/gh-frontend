@@ -4,12 +4,14 @@ import "./Terms.css";
 
 const TERMS_SECTIONS = [
   {
+    icon: "🎮",
     title: "1. Eligibility",
     paragraphs: [
       "Participation in GHSuperWinnings.com is open to users who are legally eligible to subscribe and participate under the laws and regulations of their country. By using the service, you confirm that you meet all applicable eligibility requirements.",
     ],
   },
   {
+    icon: "📱",
     title: "2. Subscription Service",
     paragraphs: [
       "GHSuperWinnings.com is a subscription-based entertainment and quiz platform.",
@@ -22,12 +24,14 @@ const TERMS_SECTIONS = [
     ],
   },
   {
+    icon: "✨",
     title: "3. Service Description",
     paragraphs: [
       "Subscribers gain access to quizzes, challenges, games, leaderboards, rewards programs, and other promotional activities available on GHSuperWinnings.com.",
     ],
   },
   {
+    icon: "🎯",
     title: "4. Gameplay & Points",
     bullets: [
       "Users can participate in quizzes and challenges to earn points.",
@@ -37,6 +41,7 @@ const TERMS_SECTIONS = [
     ],
   },
   {
+    icon: "🏆",
     title: "5. Leaderboard",
     bullets: [
       "Users are ranked on leaderboards based on accumulated points.",
@@ -46,6 +51,7 @@ const TERMS_SECTIONS = [
     ],
   },
   {
+    icon: "🎁",
     title: "6. Rewards & Prizes",
     bullets: [
       "Eligible users may receive rewards, prizes, airtime, cash prizes, vouchers, devices, or other promotional benefits.",
@@ -55,6 +61,7 @@ const TERMS_SECTIONS = [
     ],
   },
   {
+    icon: "👑",
     title: "7. Winner Selection",
     bullets: [
       "Winners are selected based on leaderboard rankings, accumulated points, promotional mechanics, or random draws where applicable.",
@@ -63,6 +70,7 @@ const TERMS_SECTIONS = [
     ],
   },
   {
+    icon: "⚖️",
     title: "8. Fair Usage Policy",
     paragraphs: ["Users must not:"],
     bullets: [
@@ -75,12 +83,14 @@ const TERMS_SECTIONS = [
       "Violations may result in account suspension, disqualification, forfeiture of rewards, or permanent termination of access.",
   },
   {
+    icon: "👤",
     title: "9. User Responsibilities",
     paragraphs: [
       "Users are responsible for ensuring that the mobile number and information provided are accurate and up to date. GHSuperWinnings.com is not responsible for rewards that cannot be delivered due to incorrect user information.",
     ],
   },
   {
+    icon: "🧾",
     title: "10. Prize Claims",
     bullets: [
       "Prize claims may require identity verification.",
@@ -89,6 +99,7 @@ const TERMS_SECTIONS = [
     ],
   },
   {
+    icon: "🔒",
     title: "11. Privacy & Data Protection",
     paragraphs: [
       "By using the service, you consent to the collection and processing of your mobile number and related information for:",
@@ -104,24 +115,28 @@ const TERMS_SECTIONS = [
       "Personal information will be handled in accordance with applicable data protection laws.",
   },
   {
+    icon: "🌐",
     title: "12. Service Availability",
     paragraphs: [
       "While we strive to provide uninterrupted access, GHSuperWinnings.com does not guarantee continuous availability. Service interruptions may occur due to maintenance, network issues, technical failures, or circumstances beyond our control.",
     ],
   },
   {
+    icon: "🛡️",
     title: "13. Limitation of Liability",
     paragraphs: [
       "GHSuperWinnings.com, its partners, affiliates, and mobile operators shall not be liable for any indirect, incidental, consequential, or special damages arising from the use of the service.",
     ],
   },
   {
+    icon: "📝",
     title: "14. Modification of Terms",
     paragraphs: [
       "GHSuperWinnings.com reserves the right to amend these Terms & Conditions at any time. Continued use of the service following such changes constitutes acceptance of the updated Terms.",
     ],
   },
   {
+    icon: "💬",
     title: "15. Contact Support",
     paragraphs: [
       "For assistance, inquiries, subscription support, or prize-related questions, please contact the official GHSuperWinnings.com customer support channels available on the website.",
@@ -158,7 +173,12 @@ export default function Terms() {
           <div className="terms-content">
             {TERMS_SECTIONS.map((section) => (
               <article key={section.title} className="terms-section">
-                <h2>{section.title}</h2>
+                <h2>
+                  <span className="terms-section-icon" aria-hidden="true">
+                    {section.icon}
+                  </span>
+                  {section.title}
+                </h2>
 
                 {section.paragraphs?.map((paragraph) => (
                   <p key={paragraph}>{paragraph}</p>
