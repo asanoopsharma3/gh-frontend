@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Swal from "sweetalert2";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -10,7 +10,6 @@ import {
 
 export default function Topup() {
   const [searchParams] = useSearchParams();
-  const [selected, setSelected] = useState("MTN");
 
   useEffect(() => {
     if (searchParams.get("payment") !== "failed") return;
@@ -23,7 +22,7 @@ export default function Topup() {
     });
   }, [searchParams]);
 
-  const handleMtnTopup = () => {
+  const handleProceed = () => {
     localStorage.setItem("offerCode", TOPUP_OFFER_CODE);
     if (isMobileNetworkCandidate()) {
       startHeSubscription(TOPUP_OFFER_CODE);
@@ -32,18 +31,9 @@ export default function Topup() {
 
     Swal.fire(
       "Unavailable",
-      "Please use Air Time on mobile data to top up.",
+      "Please use mobile data to top up.",
       "info"
     );
-  };
-
-  const handleProceed = () => {
-    if (selected === "MTN") {
-      void handleMtnTopup();
-      return;
-    }
-
-    Swal.fire("Unavailable", "Please use Air Time for on-demand questions.", "info");
   };
 
   return (
@@ -53,29 +43,9 @@ export default function Topup() {
         <p className="text-gray-200 mb-6 whitespace-pre-line">
           {TOPUP_REQUIRED_MESSAGE}
         </p>
-        <div className="space-y-2 text-yellow-300">
-          <p className="text-white">Top up with GHC1 and keep playing!</p>
-          <p className="font-bold">Daily Prize of 250 GHS @ 1 GHS</p>
-        </div>
-        <div className="flex flex-col gap-4 mt-6 w-full items-center">
-          {["MTN"].map((type) => (
-            <label
-              key={type}
-              className={`flex items-center gap-4 px-4 py-2 rounded-xl border w-[60%] cursor-pointer transition ${
-                selected === type
-                  ? "border-purple-500 bg-purple-500/10 scale-105"
-                  : "border-gray-600"
-              }`}
-            >
-              <input
-                type="radio"
-                checked={selected === type}
-                onChange={() => setSelected(type)}
-              />
-              <span>Air Time</span>
-            </label>
-          ))}
-        </div>
+        <p className="text-yellow-300 font-semibold">
+          Top up with GHS 1.00 and keep playing!
+        </p>
         <button
           onClick={handleProceed}
           className="p-3 m-4 mt-8 border border-gray-600 px-6 py-2 rounded-md hover:bg-gray-800"
