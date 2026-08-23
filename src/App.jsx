@@ -23,6 +23,7 @@ import Fetchalluser from './admin/Fetchalluser';
 import MtntransactionUI from './component/mtntransaction/Mtntransaction.jsx';
 import MTNRenewalHistory from './admin/MTNRenewalHistory.jsx';
 import MTNUnsubscribeHistory from "./admin/MTNUnsubscribeHistory.jsx";
+import Unsubscribers from "./admin/Unsubscribers.jsx";
 import ProtectedCustomerRoute from "./auth/ProtectedCustomerRoute";
 import Userprofile from './component/useprofile/Userprofile.jsx';
 import Subscribe from './pages/Subscribe.jsx';
@@ -135,6 +136,7 @@ function Layout() {
             <Route path="subscribers" element={<ProtectedAdminRoute><DashboardPage defaultReport="success" /></ProtectedAdminRoute>} />
             <Route path="renewal-subscribers" element={<ProtectedAdminRoute><DashboardPage defaultReport="renewal" /></ProtectedAdminRoute>} />
             <Route path="churn-subscribers" element={<ProtectedAdminRoute><DashboardPage defaultReport="churn" /></ProtectedAdminRoute>} />
+            <Route path="unsubscribers" element={<ProtectedAdminRoute><Unsubscribers /></ProtectedAdminRoute>} />
             <Route path="add-quiz" element={<ProtectedAdminRoute><AddQuizPage /></ProtectedAdminRoute>} />
             <Route path="quizzes" element={<ProtectedAdminRoute><QuizListPage /></ProtectedAdminRoute>} />
             <Route path="mtnstatus" element={<ProtectedAdminRoute><MtntransactionUI /></ProtectedAdminRoute>} />

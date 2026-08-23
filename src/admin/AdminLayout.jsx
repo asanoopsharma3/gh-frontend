@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   Bell,
+  PhoneOff,
   ChevronDown,
   ChevronRight,
   LayoutDashboard,
@@ -25,6 +26,7 @@ const navGroups = [
       { label: "Subscribers", path: "/admin/subscribers", icon: Users },
       { label: "Renewal Subscribers", path: "/admin/renewal-subscribers", icon: RefreshCw },
       { label: "Churn Subscribers", path: "/admin/churn-subscribers", icon: AlertTriangle },
+      { label: "Unsubscribers", path: "/admin/unsubscribers", icon: PhoneOff },
     ],
   },
   {

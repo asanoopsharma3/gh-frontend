@@ -19,6 +19,7 @@ const reportTabs = [
   { key: "renewal", label: "Renewal" },
   { key: "churn", label: "Churn" },
   { key: "failed", label: "Failed" },
+  { key: "unsubscribed", label: "Unsubscribed" },
 ];
 
 const pageMeta = {
@@ -47,6 +48,11 @@ const pageMeta = {
     tableTitle: "Failed Callbacks",
     description: "Failed callback records and failure reasons.",
   },
+  unsubscribed: {
+    title: "Unsubscribers",
+    tableTitle: "Unsubscribers",
+    description: "Numbers that unsubscribed from the website or operator callback.",
+  },
 };
 
 const formatDateTime = (value) => {
@@ -65,7 +71,7 @@ const formatDateTime = (value) => {
 const statusClass = (status) => {
   const value = String(status || "").toLowerCase();
   if (["success", "active", "renewal"].includes(value)) return "dashboard-status-success";
-  if (["failed", "inactive"].includes(value)) return "dashboard-status-failed";
+  if (["failed", "inactive", "unsubscribed"].includes(value)) return "dashboard-status-failed";
   if (["churn", "suspended", "insufficient"].includes(value)) return "dashboard-status-warning";
   return "dashboard-status-default";
 };
@@ -195,6 +201,11 @@ export default function DashboardPage({ defaultReport = "all" }) {
       label: "Monthly GHCAmount",
       value: `GHC${Number(summary.totalGhsAmount || 0).toFixed(2)}`,
     },
+    {
+      label: "Unsubscribed",
+      value: summary.unsubscribedUsers || summary.unsubscribed || 0,
+      onClick: () => navigate("/admin/unsubscribers"),
+    },
   ];
 
   const handleExport = () => {
@@ -259,8 +270,24 @@ export default function DashboardPage({ defaultReport = "all" }) {
         )}
 
         {isDashboard && <section className="dashboard-card-grid">
-          {cards.map(({ label, value }) => (
-            <article className="dashboard-summary-card" key={label}>
+          {cards.map(({ label, value, onClick }) => (
+            <article
+              className={`dashboard-summary-card ${onClick ? "dashboard-summary-card-clickable" : ""}`}
+              key={label}
+              onClick={onClick}
+              role={onClick ? "button" : undefined}
+              tabIndex={onClick ? 0 : undefined}
+              onKeyDown={
+                onClick
+                  ? (event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onClick();
+                      }
+                    }
+                  : undefined
+              }
+            >
               <div>
                 <h2>{label}</h2>
                 <strong>{value}</strong>

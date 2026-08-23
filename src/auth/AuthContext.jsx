@@ -27,6 +27,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     localStorage.removeItem('payment_done');
     localStorage.removeItem('offerCode');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('phone');
     setIsLoggedIn(false);
     if (redirect) {
       navigate('/subscribe?fallback=true');

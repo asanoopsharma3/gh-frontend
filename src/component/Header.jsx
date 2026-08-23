@@ -1,12 +1,23 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { Menu, X, Trophy, Box, LifeBuoy, LogOut, User, CircleUserRound, FileText } from "lucide-react";
+import {
+  Menu,
+  X,
+  Trophy,
+  Box,
+  LifeBuoy,
+  LogOut,
+  User,
+  CircleUserRound,
+  FileText,
+  Home,
+  PhoneOff,
+} from "lucide-react";
 import Logo from "../assets/image1.png";
 import { GrTransaction } from "react-icons/gr";
 import { useAuth } from "../auth/AuthContext";
 import Swal from "sweetalert2";
-import { BellOff } from "lucide-react";
-import { Home } from "lucide-react";
+import { unsubscribeCurrentUser } from "../config/subscription";
 
 
 export default function Header() {
@@ -15,6 +26,80 @@ export default function Header() {
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  const closeMenus = () => {
+    setMenuOpen(false);
+    setUserMenuOpen(false);
+  };
+
+  const onUnsubscribeHandler = () => {
+    Swal.fire({
+      title: "Unsubscribe?",
+      html: `
+        <p>Are you sure you want to unsubscribe?</p>
+        <p style="margin-top:10px;font-size:14px;color:#555;">
+          This will unsubscribe your MTN number, stop daily quiz access.
+        </p>
+      `,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Unsubscribe",
+      cancelButtonText: "Cancel",
+      reverseButtons: true,
+      background: "#fff",
+      color: "#333",
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#28a745",
+    }).then(async (result) => {
+      if (!result.isConfirmed) return;
+
+      Swal.fire({
+        title: "Unsubscribing...",
+        text: "Please wait while we update your number.",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
+      try {
+        const data = await unsubscribeCurrentUser();
+        logout(false);
+        closeMenus();
+        await Swal.fire({
+          title: data.message || "Unsubscribe successful",
+          text:
+            data.description ||
+            data.mtn?.description ||
+            "Your number has been unsubscribed and your session has been cleared.",
+          icon: "success",
+          confirmButtonColor: "#1683f5",
+        });
+        navigate("/subscribe?fallback=true", { replace: true });
+      } catch (error) {
+        if (error.status === 401) {
+          logout(false);
+          closeMenus();
+          await Swal.fire({
+            title: "Session Cleared",
+            text: "Your login session was no longer valid, so it has been cleared. Subscribe again if you want to play.",
+            icon: "info",
+            confirmButtonColor: "#1683f5",
+          });
+          navigate("/subscribe?fallback=true", { replace: true });
+          return;
+        }
+
+        Swal.fire({
+          title: error.message || "Unsubscribe Failed",
+          text: error.description || error.message || "Unable to unsubscribe right now. Please try again.",
+          icon: "error",
+          confirmButtonColor: "#d33",
+        });
+      }
+    });
+  };
 
   const onLogoutHandler = () => {
     Swal.fire({
@@ -120,13 +205,17 @@ export default function Header() {
                 >
                   <CircleUserRound size={16} /> Profile
                 </button>
-                 
-                 <button className="flex items-center  text-black gap-2  px-4 py-20">
-                  <BellOff size={20} />
+
+                <button
+                  onClick={onUnsubscribeHandler}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2 text-red-600"
+                >
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-red-100 text-red-600">
+                    <PhoneOff size={14} />
+                  </span>
                   Unsubscribe
                 </button>
 
-                
                 <button
                   onClick={onLogoutHandler}
                   className="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-2"
@@ -224,8 +313,13 @@ export default function Header() {
                   <CircleUserRound size={16} /> Profile
                 </button>
 
-                   <button className="flex items-center  text-black gap-2  px-4 py-20">
-                  <BellOff size={20} />
+                <button
+                  onClick={onUnsubscribeHandler}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-200 flex items-center gap-2 text-red-600"
+                >
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-red-100 text-red-600">
+                    <PhoneOff size={14} />
+                  </span>
                   Unsubscribe
                 </button>
                 

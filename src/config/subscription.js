@@ -78,6 +78,30 @@ export const activateLocalSubscription = async (msisdn, offerCode = INITIAL_OFFE
   return data;
 };
 
+export const unsubscribeCurrentUser = async () => {
+  const token = localStorage.getItem("token");
+  const response = await fetch(`${API_BASE_URL}/subscription/unsubscribe`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data?.success) {
+    const error = new Error(
+      data?.message || "Unable to unsubscribe right now. Please try again."
+    );
+    error.status = response.status;
+    error.description = data?.description || data?.mtn?.description || "";
+    error.mtn = data?.mtn || null;
+    throw error;
+  }
+
+  return data;
+};
+
 
 
 
