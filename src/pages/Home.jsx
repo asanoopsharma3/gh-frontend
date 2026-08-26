@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Brain, Coins, Zap } from "lucide-react";
 import {
   INITIAL_OFFER_CODE,
+  isMobileDevice,
   isMobileNetworkCandidate,
   startHeSubscription,
 } from "../config/subscription";
@@ -28,7 +29,8 @@ function Home() {
   }, []);
 
   const handleSubscribeClick = () => {
-    if (isMobileNetworkCandidate()) {
+    if (isMobile || isMobileNetworkCandidate() || isMobileDevice()) {
+      localStorage.setItem("offerCode", INITIAL_OFFER_CODE);
       startHeSubscription(INITIAL_OFFER_CODE);
       return;
     }

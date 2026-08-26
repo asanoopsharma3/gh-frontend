@@ -15,17 +15,34 @@ export const CGW_NHE_PORTAL_URL =
     ? "https://sitcg.mtn.com.gh/Portal"
     : "https://cg.mtn.com.gh/Portal";
 
-export const isMobileNetworkCandidate = () => {
-  const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const connection =
-    navigator.connection ||
-    navigator.mozConnection ||
-    navigator.webkitConnection;
-  const connectionType = connection?.type?.toLowerCase();
+export const isMobileDevice = () => {
+  if (typeof navigator === "undefined" || typeof window === "undefined") {
+    return false;
+  }
 
-  // Match the proven GhanaGameium flow: mobile uses HE unless Wi-Fi is explicitly detected.
-  // Browsers that do not expose connection.type must still be allowed to use MTN HE.
-  return isMobileDevice && connectionType !== "wifi";
+  if (navigator.userAgentData?.mobile === true) {
+    return true;
+  }
+
+  const ua = navigator.userAgent || "";
+  if (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Silk|SamsungBrowser/i.test(
+      ua
+    )
+  ) {
+    return true;
+  }
+
+  // Chrome/Safari device toolbar and small phone screens should still start HE.
+  return Boolean(window.matchMedia?.("(max-width: 729px)")?.matches);
+};
+
+export const isMobileNetworkCandidate = () => {
+  // Always try MTN header enrichment on mobile view/devices.
+  // Do not block on navigator.connection.type === "wifi": Chrome often reports
+  // wifi in device toolbar and on some Ghana Android browsers even on mobile data.
+  // The HE portal itself only attaches MSISDN on the operator network.
+  return isMobileDevice();
 };
 
 export const startHeSubscription = (offerCode = INITIAL_OFFER_CODE) => {

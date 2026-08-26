@@ -231,6 +231,7 @@ body.plan-banner {
     animation: glowing 20s linear infinite;
     opacity: 1; /* always visible */
     border-radius: 10px;
+    pointer-events: none;
 }
 
 /* Inner hover effect (optional scaling) */
@@ -267,7 +268,8 @@ body.plan-banner {
     background: #111;
     left: 0;
     top: 0;
-    border-radius: 10px
+    border-radius: 10px;
+    pointer-events: none;
 }
 
 @keyframes glowing {
