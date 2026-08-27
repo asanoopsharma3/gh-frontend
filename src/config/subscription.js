@@ -49,12 +49,12 @@ export const startHeSubscription = (offerCode = INITIAL_OFFER_CODE) => {
   const callbackUrl = new URL(CGW_BACKEND_CALLBACK_URL);
   callbackUrl.searchParams.set("flow", "HE");
   const params = new URLSearchParams({
-    offerCode,
+    OfferCode: offerCode,
     redirectUrl: callbackUrl.toString(),
     mobileNumber: HE_MOBILE_NUMBER,
   });
 
-  window.location.href = `${API_BASE_URL}/cgw/he-redirect?${params.toString()}`;
+  window.location.href = `${CGW_NHE_PORTAL_URL}?${params.toString()}`;
 };
 
 export const startNheSubscription = (msisdn, offerCode = INITIAL_OFFER_CODE) => {
