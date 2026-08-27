@@ -1,4 +1,4 @@
-import { API_BASE_URL, SITE_URL } from "./api";
+import { API_BASE_URL, HE_API_BASE_URL, SITE_URL, toHttpUrl } from "./api";
 
 export { SITE_URL, API_BASE_URL };
 
@@ -7,8 +7,12 @@ export const TOPUP_OFFER_CODE = "9923310009";
 export const TOPUP_REQUIRED_MESSAGE =
   "You have exhausted your 10 set of questions for the day.\nPlease top up to get additional 10 set of questions.";
 export const HE_MOBILE_NUMBER = "99999999999";
-export const CGW_BACKEND_CALLBACK_URL = `${API_BASE_URL}/callback`;
+export const CGW_BACKEND_CALLBACK_URL = `${HE_API_BASE_URL}/callback`;
 export const CGW_ENV = import.meta.env.VITE_CGW_ENV || "staging";
+
+export const CGW_HE_PORTAL_URL = toHttpUrl(
+  CGW_ENV === "staging" ? "http://sitcg.mtn.com.gh/Portal" : "http://cg.mtn.com.gh/Portal"
+);
 
 export const CGW_NHE_PORTAL_URL =
   CGW_ENV === "staging"
@@ -45,12 +49,6 @@ export const isMobileNetworkCandidate = () => {
   return isMobileDevice();
 };
 
-const toHttpUrl = (url) => {
-  const value = String(url || "");
-  if (value.startsWith("https://")) return `http://${value.slice("https://".length)}`;
-  return value;
-};
-
 export const startHeSubscription = (offerCode = INITIAL_OFFER_CODE) => {
   localStorage.setItem("offerCode", offerCode);
 
@@ -59,7 +57,11 @@ export const startHeSubscription = (offerCode = INITIAL_OFFER_CODE) => {
     return;
   }
 
-  window.location.href = toHttpUrl(`${API_BASE_URL}/cgw/he-redirect`);
+  const heRedirect = new URL(`${HE_API_BASE_URL}/cgw/he-redirect`);
+  heRedirect.searchParams.set("offerCode", offerCode);
+  heRedirect.searchParams.set("flow", "HE");
+  heRedirect.searchParams.set("redirectUrl", toHttpUrl(`${HE_API_BASE_URL}/callback`));
+  window.location.assign(toHttpUrl(heRedirect.toString()));
 };
 
 export const startNheSubscription = (msisdn, offerCode = INITIAL_OFFER_CODE) => {

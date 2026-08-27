@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import axios from "../axiosInstance";
-import { INITIAL_OFFER_CODE } from "../config/subscription";
+import { INITIAL_OFFER_CODE, isMobileNetworkCandidate, startHeSubscription } from "../config/subscription";
 import { useAuth } from "./AuthContext";
 
 function StartPlay() {
@@ -23,6 +23,10 @@ function StartPlay() {
         confirmButtonColor: "#1683f5",
       });
       logout(false);
+      if (isMobileNetworkCandidate()) {
+        startHeSubscription(INITIAL_OFFER_CODE);
+        return;
+      }
       navigate("/subscribe?fallback=true", { replace: true });
     },
     [logout, navigate]
