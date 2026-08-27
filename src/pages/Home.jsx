@@ -35,7 +35,7 @@ function Home() {
       return;
     }
 
-    navigate(`/subscribe?fallback=true&offerCode=${INITIAL_OFFER_CODE}`);
+    navigate("/subscribe?fallback=true");
   };
 
   return (

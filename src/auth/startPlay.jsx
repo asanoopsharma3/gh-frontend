@@ -23,7 +23,7 @@ function StartPlay() {
         confirmButtonColor: "#1683f5",
       });
       logout(false);
-      navigate(`/subscribe?fallback=true&offerCode=${INITIAL_OFFER_CODE}`, { replace: true });
+      navigate("/subscribe?fallback=true", { replace: true });
     },
     [logout, navigate]
   );

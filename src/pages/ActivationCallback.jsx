@@ -62,7 +62,7 @@ export default function ActivationCallback() {
       navigate(
         isTopup
           ? "/topup?payment=failed"
-          : `/subscribe?fallback=true${offerCode ? `&offerCode=${offerCode}` : ""}`,
+          : "/subscribe?fallback=true",
         { replace: true }
       )
     );

@@ -52,16 +52,14 @@ const toHttpUrl = (url) => {
 };
 
 export const startHeSubscription = (offerCode = INITIAL_OFFER_CODE) => {
+  localStorage.setItem("offerCode", offerCode);
+
   if (import.meta.env.DEV) {
-    window.location.assign(
-      `/subscribe?fallback=true&offerCode=${encodeURIComponent(offerCode)}`
-    );
+    window.location.assign("/subscribe?fallback=true");
     return;
   }
 
-  const captureUrl = new URL(toHttpUrl(`${API_BASE_URL}/cgw/he-redirect`));
-  captureUrl.searchParams.set("offerCode", offerCode);
-  window.location.href = captureUrl.toString();
+  window.location.href = toHttpUrl(`${API_BASE_URL}/cgw/he-redirect`);
 };
 
 export const startNheSubscription = (msisdn, offerCode = INITIAL_OFFER_CODE) => {
