@@ -45,16 +45,23 @@ export const isMobileNetworkCandidate = () => {
   return isMobileDevice();
 };
 
-export const startHeSubscription = (offerCode = INITIAL_OFFER_CODE) => {
-  const callbackUrl = new URL(CGW_BACKEND_CALLBACK_URL);
-  callbackUrl.searchParams.set("flow", "HE");
-  const params = new URLSearchParams({
-    OfferCode: offerCode,
-    redirectUrl: callbackUrl.toString(),
-    mobileNumber: HE_MOBILE_NUMBER,
-  });
+const toHttpUrl = (url) => {
+  const value = String(url || "");
+  if (value.startsWith("https://")) return `http://${value.slice("https://".length)}`;
+  return value;
+};
 
-  window.location.href = `${CGW_NHE_PORTAL_URL}?${params.toString()}`;
+export const startHeSubscription = (offerCode = INITIAL_OFFER_CODE) => {
+  if (import.meta.env.DEV) {
+    window.location.assign(
+      `/subscribe?fallback=true&offerCode=${encodeURIComponent(offerCode)}`
+    );
+    return;
+  }
+
+  const captureUrl = new URL(toHttpUrl(`${API_BASE_URL}/cgw/he-redirect`));
+  captureUrl.searchParams.set("offerCode", offerCode);
+  window.location.href = captureUrl.toString();
 };
 
 export const startNheSubscription = (msisdn, offerCode = INITIAL_OFFER_CODE) => {
