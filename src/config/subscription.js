@@ -10,10 +10,16 @@ export const HE_MOBILE_NUMBER = "99999999999";
 export const CGW_BACKEND_CALLBACK_URL = `${API_BASE_URL}/callback`;
 export const CGW_ENV = import.meta.env.VITE_CGW_ENV || "staging";
 
+export const HE_REDIRECT_URL =
+  import.meta.env.VITE_HE_REDIRECT_URL || "http://102.133.198.92/Redirect";
+
 export const CGW_NHE_PORTAL_URL =
   CGW_ENV === "staging"
     ? "https://sitcg.mtn.com.gh/Portal"
     : "https://cg.mtn.com.gh/Portal";
+
+export const FORCE_HE =
+  import.meta.env.DEV && import.meta.env.VITE_FORCE_HE === "true";
 
 export const isMobileDevice = () => {
   if (typeof navigator === "undefined" || typeof window === "undefined") {
@@ -33,42 +39,22 @@ export const isMobileDevice = () => {
     return true;
   }
 
-  // Chrome/Safari device toolbar and small phone screens should still start HE.
   return Boolean(window.matchMedia?.("(max-width: 729px)")?.matches);
 };
 
 export const isMobileNetworkCandidate = () => {
-  // Always try MTN header enrichment on mobile view/devices.
-  // Do not block on navigator.connection.type === "wifi": Chrome often reports
-  // wifi in device toolbar and on some Ghana Android browsers even on mobile data.
-  // The HE portal itself only attaches MSISDN on the operator network.
+  if (FORCE_HE) return true;
   return isMobileDevice();
 };
 
-const toHttpUrl = (url) => {
-  const value = String(url || "");
-  if (value.startsWith("https://")) return `http://${value.slice("https://".length)}`;
-  return value;
-};
+const HE_CALLBACK_BASE = (
+  import.meta.env.VITE_HE_CALLBACK_URL || CGW_BACKEND_CALLBACK_URL
+).replace(/\/+$/, "");
 
-export const startHeSubscription = (offerCode = INITIAL_OFFER_CODE) => {
-  // Header enrichment only works on HTTP. Navigate to the backend capture
-  // endpoint over HTTP so MTN can inject MSISDN and send the user to http://cg.mtn.
-  const captureUrl = new URL(toHttpUrl(`${API_BASE_URL}/cgw/he-redirect`));
-  captureUrl.searchParams.set("offerCode", offerCode);
-  window.location.href = captureUrl.toString();
-};
-
-export const startNheSubscription = (msisdn, offerCode = INITIAL_OFFER_CODE) => {
-  const callbackUrl = new URL(CGW_BACKEND_CALLBACK_URL);
-  callbackUrl.searchParams.set("flow", "NHE");
-  const params = new URLSearchParams({
-    OfferCode: offerCode,
-    redirectUrl: callbackUrl.toString(),
-    mobileNumber: msisdn,
-  });
-
-  window.location.href = `${CGW_NHE_PORTAL_URL}?${params.toString()}`;
+const buildHeCallbackUrl = () => {
+  const callbackUrl = new URL(HE_CALLBACK_BASE);
+  callbackUrl.searchParams.set("flow", "HE");
+  return callbackUrl.toString();
 };
 
 export const normalizeGhanaMsisdn = (phoneNumber) => {
@@ -79,8 +65,41 @@ export const normalizeGhanaMsisdn = (phoneNumber) => {
   return `233${digits}`;
 };
 
+export const LOCAL_HE_MSISDN = normalizeGhanaMsisdn(
+  import.meta.env.VITE_LOCAL_HE_MSISDN || "257294199"
+);
+
+export const startHeSubscription = (offerCode = INITIAL_OFFER_CODE) => {
+  localStorage.setItem("offerCode", offerCode);
+
+  const rawMsisdn = import.meta.env.DEV ? LOCAL_HE_MSISDN : "";
+  const msisdn = normalizeGhanaMsisdn(rawMsisdn);
+
+  const params = new URLSearchParams({
+    OfferCode: offerCode,
+    redirectUrl: buildHeCallbackUrl(),
+    msisdn,
+  });
+
+  window.location.href = `${HE_REDIRECT_URL}?${params.toString()}`;
+};
+
+export const startNheSubscription = (msisdn, offerCode = INITIAL_OFFER_CODE) => {
+  const callbackUrl = new URL(CGW_BACKEND_CALLBACK_URL);
+  callbackUrl.searchParams.set("flow", "NHE");
+  const params = new URLSearchParams({
+    OfferCode: offerCode,
+    redirectUrl: callbackUrl.toString(),
+    mobileNumber: normalizeGhanaMsisdn(msisdn),
+  });
+
+  window.location.href = `${CGW_NHE_PORTAL_URL}?${params.toString()}`;
+};
+
 export const LOCAL_SUBSCRIPTION_ENABLED =
-  import.meta.env.DEV && import.meta.env.VITE_LOCAL_SUBSCRIPTION === "true";
+  import.meta.env.DEV &&
+  !FORCE_HE &&
+  import.meta.env.VITE_LOCAL_SUBSCRIPTION === "true";
 
 export const activateLocalSubscription = async (msisdn, offerCode = INITIAL_OFFER_CODE) => {
   const response = await fetch(`${API_BASE_URL}/subscription/dev-activate`, {

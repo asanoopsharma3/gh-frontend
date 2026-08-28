@@ -1,10 +1,7 @@
-import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Brain, Coins, Zap } from "lucide-react";
 import {
   INITIAL_OFFER_CODE,
-  LOCAL_SUBSCRIPTION_ENABLED,
-  isMobileNetworkCandidate,
   startHeSubscription,
 } from "../config/subscription";
 import PromoCarousel from "../component/PromoCarousel";
@@ -17,8 +14,6 @@ const HOME_PERKS = [
 ];
 
 function Home() {
-  const navigate = useNavigate();
-
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -29,17 +24,7 @@ function Home() {
   }, []);
 
   const handleSubscribeClick = () => {
-    if (LOCAL_SUBSCRIPTION_ENABLED) {
-      navigate(`/subscribe?fallback=true&offerCode=${INITIAL_OFFER_CODE}`);
-      return;
-    }
-
-    if (isMobileNetworkCandidate()) {
-      startHeSubscription(INITIAL_OFFER_CODE);
-      return;
-    }
-
-    navigate(`/subscribe?fallback=true&offerCode=${INITIAL_OFFER_CODE}`);
+    startHeSubscription(INITIAL_OFFER_CODE);
   };
 
   return (
