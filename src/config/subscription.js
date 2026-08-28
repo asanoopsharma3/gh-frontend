@@ -15,29 +15,48 @@ export const CGW_NHE_PORTAL_URL =
     ? "https://sitcg.mtn.com.gh/Portal"
     : "https://cg.mtn.com.gh/Portal";
 
-export const isMobileNetworkCandidate = () => {
-  const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  const connection =
-    navigator.connection ||
-    navigator.mozConnection ||
-    navigator.webkitConnection;
-  const connectionType = connection?.type?.toLowerCase();
+export const isMobileDevice = () => {
+  if (typeof navigator === "undefined" || typeof window === "undefined") {
+    return false;
+  }
 
-  // Match the proven GhanaGameium flow: mobile uses HE unless Wi-Fi is explicitly detected.
-  // Browsers that do not expose connection.type must still be allowed to use MTN HE.
-  return isMobileDevice && connectionType !== "wifi";
+  if (navigator.userAgentData?.mobile === true) {
+    return true;
+  }
+
+  const ua = navigator.userAgent || "";
+  if (
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|Silk|SamsungBrowser/i.test(
+      ua
+    )
+  ) {
+    return true;
+  }
+
+  // Chrome/Safari device toolbar and small phone screens should still start HE.
+  return Boolean(window.matchMedia?.("(max-width: 729px)")?.matches);
+};
+
+export const isMobileNetworkCandidate = () => {
+  // Always try MTN header enrichment on mobile view/devices.
+  // Do not block on navigator.connection.type === "wifi": Chrome often reports
+  // wifi in device toolbar and on some Ghana Android browsers even on mobile data.
+  // The HE portal itself only attaches MSISDN on the operator network.
+  return isMobileDevice();
+};
+
+const toHttpUrl = (url) => {
+  const value = String(url || "");
+  if (value.startsWith("https://")) return `http://${value.slice("https://".length)}`;
+  return value;
 };
 
 export const startHeSubscription = (offerCode = INITIAL_OFFER_CODE) => {
-  const callbackUrl = new URL(CGW_BACKEND_CALLBACK_URL);
-  callbackUrl.searchParams.set("flow", "HE");
-  const params = new URLSearchParams({
-    offerCode,
-    redirectUrl: callbackUrl.toString(),
-    mobileNumber: HE_MOBILE_NUMBER,
-  });
-
-  window.location.href = `${API_BASE_URL}/cgw/he-redirect?${params.toString()}`;
+  // Header enrichment only works on HTTP. Navigate to the backend capture
+  // endpoint over HTTP so MTN can inject MSISDN and send the user to http://cg.mtn.
+  const captureUrl = new URL(toHttpUrl(`${API_BASE_URL}/cgw/he-redirect`));
+  captureUrl.searchParams.set("offerCode", offerCode);
+  window.location.href = captureUrl.toString();
 };
 
 export const startNheSubscription = (msisdn, offerCode = INITIAL_OFFER_CODE) => {
@@ -77,9 +96,3 @@ export const activateLocalSubscription = async (msisdn, offerCode = INITIAL_OFFE
 
   return data;
 };
-
-
-
-
-
-
