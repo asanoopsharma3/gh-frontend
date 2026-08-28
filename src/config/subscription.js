@@ -69,18 +69,18 @@ export const LOCAL_HE_MSISDN = normalizeGhanaMsisdn(
   import.meta.env.VITE_LOCAL_HE_MSISDN || "257294199"
 );
 
-export const startHeSubscription = (offerCode = INITIAL_OFFER_CODE) => {
-  localStorage.setItem("offerCode", offerCode);
-
+export const getHeRedirectParams = (offerCode = INITIAL_OFFER_CODE) => {
   const rawMsisdn = import.meta.env.DEV ? LOCAL_HE_MSISDN : "";
-  const msisdn = normalizeGhanaMsisdn(rawMsisdn);
-
-  const params = new URLSearchParams({
+  return {
     OfferCode: offerCode,
     redirectUrl: buildHeCallbackUrl(),
-  });
-  params.set("msisdn", msisdn);
+    msisdn: normalizeGhanaMsisdn(rawMsisdn),
+  };
+};
 
+export const startHeSubscription = (offerCode = INITIAL_OFFER_CODE) => {
+  localStorage.setItem("offerCode", offerCode);
+  const params = new URLSearchParams(getHeRedirectParams(offerCode));
   window.location.replace(`${HE_REDIRECT_URL}?${params.toString()}`);
 };
 

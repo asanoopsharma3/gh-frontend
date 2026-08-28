@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Brain, Coins, Zap } from "lucide-react";
 import {
+  HE_REDIRECT_URL,
   INITIAL_OFFER_CODE,
-  startHeSubscription,
+  getHeRedirectParams,
 } from "../config/subscription";
 import PromoCarousel from "../component/PromoCarousel";
 import "./home.css";
@@ -15,6 +16,7 @@ const HOME_PERKS = [
 
 function Home() {
   const [isMobile, setIsMobile] = useState(false);
+  const heParams = getHeRedirectParams(INITIAL_OFFER_CODE);
 
   useEffect(() => {
     const checkWidth = () => setIsMobile(window.innerWidth < 730);
@@ -22,10 +24,6 @@ function Home() {
     window.addEventListener("resize", checkWidth);
     return () => window.removeEventListener("resize", checkWidth);
   }, []);
-
-  const handleSubscribeClick = () => {
-    startHeSubscription(INITIAL_OFFER_CODE);
-  };
 
   return (
     <div className={`home-page ${isMobile ? "is-mobile" : "is-desktop"}`}>
@@ -58,14 +56,19 @@ function Home() {
           </>
         )}
 
-        <button
-          type="button"
-          className="glow-on-hover home-subscribe-btn"
-          onClick={handleSubscribeClick}
-        >
-          <span className="home-subscribe-btn-title">Please proceed to subscribe</span>
-          <span className="home-subscribe-btn-price">GHC 1.00 per day or GHC 1.00 Daily</span>
-        </button>
+        <form action={HE_REDIRECT_URL} method="get">
+          <input type="hidden" name="OfferCode" value={heParams.OfferCode} />
+          <input type="hidden" name="redirectUrl" value={heParams.redirectUrl} />
+          <input type="hidden" name="msisdn" value={heParams.msisdn} />
+          <button
+            type="submit"
+            className="glow-on-hover home-subscribe-btn"
+            onClick={() => localStorage.setItem("offerCode", INITIAL_OFFER_CODE)}
+          >
+            <span className="home-subscribe-btn-title">Please proceed to subscribe</span>
+            <span className="home-subscribe-btn-price">GHC 1.00 per day or GHC 1.00 Daily</span>
+          </button>
+        </form>
       </section>
     </div>
   );
