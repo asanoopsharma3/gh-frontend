@@ -12,19 +12,28 @@ if [ ! -d .git ]; then
 fi
 
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-echo "==> Pulling latest code from origin/${BRANCH}"
+echo "==> Syncing ${BRANCH} with origin/${BRANCH}"
 git fetch origin
-git pull --ff-only origin "$BRANCH"
+git reset --hard "origin/${BRANCH}"
 
-if [ -f package-lock.json ]; then
-  echo "==> Installing dependencies (npm ci)"
-  npm ci
-else
-  echo "==> Installing dependencies (npm install)"
-  npm install
-fi
+echo "==> Installing dependencies"
+npm install
 
 echo "==> Building production bundle"
 npm run build
 
-echo "==> Deploy complete. Output: ${ROOT_DIR}/dist"
+PUBLISH_DIR="${DEPLOY_PUBLIC_DIR:-}"
+if [ -z "$PUBLISH_DIR" ] && [ "$(basename "$ROOT_DIR")" = "frontend" ]; then
+  PUBLISH_DIR="$(cd "$ROOT_DIR/.." && pwd)"
+fi
+
+if [ -n "${PUBLISH_DIR}" ] && [ -d "$ROOT_DIR/dist" ]; then
+  echo "==> Publishing dist to ${PUBLISH_DIR}"
+  cp -R "$ROOT_DIR/dist/." "$PUBLISH_DIR/"
+fi
+
+echo "==> Deploy complete"
+echo "    Build: ${ROOT_DIR}/dist"
+if [ -n "${PUBLISH_DIR:-}" ]; then
+  echo "    Live:  ${PUBLISH_DIR}"
+fi

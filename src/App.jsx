@@ -33,15 +33,6 @@ import Topup from './component/topup/Topup.jsx';
 
 // ---------------- Home Redirect ----------------
 const HomeRedirect = () => {
-  const { isLoggedIn, loading } = useAuth();
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (isLoggedIn) {
-    return <Navigate to="/start/play" replace />;
-  }
   return <Home />;
 };
 

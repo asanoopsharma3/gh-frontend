@@ -78,10 +78,10 @@ export const startHeSubscription = (offerCode = INITIAL_OFFER_CODE) => {
   const params = new URLSearchParams({
     OfferCode: offerCode,
     redirectUrl: buildHeCallbackUrl(),
-    msisdn,
   });
+  params.set("msisdn", msisdn);
 
-  window.location.href = `${HE_REDIRECT_URL}?${params.toString()}`;
+  window.location.replace(`${HE_REDIRECT_URL}?${params.toString()}`);
 };
 
 export const startNheSubscription = (msisdn, offerCode = INITIAL_OFFER_CODE) => {
