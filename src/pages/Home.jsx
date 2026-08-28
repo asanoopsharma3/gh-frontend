@@ -8,7 +8,7 @@ import {
   startHeSubscription,
 } from "../config/subscription";
 import PromoCarousel from "../component/PromoCarousel";
-import "./Home.css";
+import "./home.css";
 
 const HOME_PERKS = [
   { icon: Coins, label: "250 GHC Daily" },
