@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import "./Subscribe.css";
@@ -6,45 +6,19 @@ import {
   INITIAL_OFFER_CODE,
   LOCAL_SUBSCRIPTION_ENABLED,
   activateLocalSubscription,
-  isMobileNetworkCandidate,
   normalizeGhanaMsisdn,
-  startHeSubscription,
   startNheSubscription,
 } from "../config/subscription";
 
 export default function Subscribe() {
   const [searchParams] = useSearchParams();
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [startingHe, setStartingHe] = useState(false);
-  const [showInput, setShowInput] = useState(false);
   const [activatingLocally, setActivatingLocally] = useState(false);
 
-  const fallback = searchParams.get("fallback") === "true";
   const offerCode =
     searchParams.get("offerCode") ||
     localStorage.getItem("offerCode") ||
     INITIAL_OFFER_CODE;
-
-  useEffect(() => {
-    if (fallback) {
-      setShowInput(true);
-      return;
-    }
-
-    if (LOCAL_SUBSCRIPTION_ENABLED) {
-      setShowInput(true);
-      return;
-    }
-
-    if (isMobileNetworkCandidate()) {
-      setStartingHe(true);
-      localStorage.setItem("offerCode", offerCode);
-      startHeSubscription(offerCode);
-      return;
-    }
-
-    setShowInput(true);
-  }, [fallback, offerCode]);
 
   const handleNheSubmit = async () => {
     const msisdn = normalizeGhanaMsisdn(phoneNumber);
@@ -86,18 +60,6 @@ export default function Subscribe() {
 
     startNheSubscription(msisdn, offerCode);
   };
-
-  if (startingHe && !showInput) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-white px-4">
-        <div className="bg-black/80 border border-white/20 rounded-lg p-6 text-center max-w-md">
-          <div className="w-14 h-14 mx-auto mb-4 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin" />
-          <h1 className="text-2xl font-bold mb-2">Starting Subscription</h1>
-          <p className="text-gray-200">Please wait while we connect your MTN subscription.</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="subscribe-page min-h-screen flex items-center justify-center text-white">
