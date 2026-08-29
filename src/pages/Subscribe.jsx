@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import "./Subscribe.css";
@@ -11,14 +11,23 @@ import {
 } from "../config/subscription";
 
 export default function Subscribe() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [phoneNumber, setPhoneNumber] = useState("");
   const [activatingLocally, setActivatingLocally] = useState(false);
 
+  const offerCodeFromQuery = searchParams.get("offerCode");
   const offerCode =
-    searchParams.get("offerCode") ||
+    offerCodeFromQuery ||
     localStorage.getItem("offerCode") ||
     INITIAL_OFFER_CODE;
+
+  useEffect(() => {
+    if (!offerCodeFromQuery) return;
+    localStorage.setItem("offerCode", offerCodeFromQuery);
+    const next = new URLSearchParams(searchParams);
+    next.delete("offerCode");
+    setSearchParams(next, { replace: true });
+  }, [offerCodeFromQuery, searchParams, setSearchParams]);
 
   const handleNheSubmit = async () => {
     const msisdn = normalizeGhanaMsisdn(phoneNumber);

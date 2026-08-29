@@ -3,6 +3,7 @@ import { API_BASE_URL, SITE_URL } from "./api";
 export { SITE_URL, API_BASE_URL };
 
 export const INITIAL_OFFER_CODE = "9923310010";
+export const NHE_SUBSCRIBE_PATH = "/subscribe?fallback=true";
 export const TOPUP_OFFER_CODE = "9923310009";
 export const TOPUP_REQUIRED_MESSAGE =
   "You have exhausted your 10 set of questions for the day.\nPlease top up to get additional 10 set of questions.";

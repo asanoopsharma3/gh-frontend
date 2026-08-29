@@ -70,9 +70,7 @@ function Home() {
               localStorage.setItem("offerCode", INITIAL_OFFER_CODE);
               if (!isMobileNetworkCandidate()) {
                 event.preventDefault();
-                navigate(
-                  `/subscribe?fallback=true&offerCode=${INITIAL_OFFER_CODE}`
-                );
+                navigate("/subscribe?fallback=true");
               }
             }}
           >

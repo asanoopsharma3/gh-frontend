@@ -52,6 +52,9 @@ export default function ActivationCallback() {
     }
 
     localStorage.removeItem("payment_done");
+    if (offerCode) {
+      localStorage.setItem("offerCode", offerCode);
+    }
     Swal.fire({
       icon: "error",
       title: "Subscription Failed",
@@ -62,7 +65,7 @@ export default function ActivationCallback() {
       navigate(
         isTopup
           ? "/topup?payment=failed"
-          : `/subscribe?fallback=true${offerCode ? `&offerCode=${offerCode}` : ""}`,
+          : "/subscribe?fallback=true",
         { replace: true }
       )
     );
