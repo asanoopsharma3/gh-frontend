@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Brain, Coins, Zap } from "lucide-react";
 import {
   HE_REDIRECT_URL,
   INITIAL_OFFER_CODE,
   getHeRedirectParams,
+  isMobileNetworkCandidate,
 } from "../config/subscription";
 import PromoCarousel from "../component/PromoCarousel";
 import "./home.css";
@@ -15,6 +17,7 @@ const HOME_PERKS = [
 ];
 
 function Home() {
+  const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
   const heParams = getHeRedirectParams(INITIAL_OFFER_CODE);
 
@@ -63,7 +66,15 @@ function Home() {
           <button
             type="submit"
             className="glow-on-hover home-subscribe-btn"
-            onClick={() => localStorage.setItem("offerCode", INITIAL_OFFER_CODE)}
+            onClick={(event) => {
+              localStorage.setItem("offerCode", INITIAL_OFFER_CODE);
+              if (!isMobileNetworkCandidate()) {
+                event.preventDefault();
+                navigate(
+                  `/subscribe?fallback=true&offerCode=${INITIAL_OFFER_CODE}`
+                );
+              }
+            }}
           >
             <span className="home-subscribe-btn-title">Please proceed to subscribe</span>
             <span className="home-subscribe-btn-price">GHC 1.00 per day or GHC 1.00 Daily</span>

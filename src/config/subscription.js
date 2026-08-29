@@ -43,7 +43,13 @@ export const isMobileDevice = () => {
 };
 
 export const isMobileNetworkCandidate = () => {
-  if (FORCE_HE) return true;
+  const connection =
+    navigator.connection ||
+    navigator.mozConnection ||
+    navigator.webkitConnection;
+  const connectionType = connection?.type?.toLowerCase();
+  if (connectionType === "wifi") return false;
+
   return isMobileDevice();
 };
 
