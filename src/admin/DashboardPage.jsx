@@ -106,6 +106,162 @@ const getAdminData = async (path, config) => {
   throw lastError;
 };
 
+const normalizeText = (value) => String(value || "").toLowerCase();
+
+const matchesReport = (row, reportKey) => {
+  if (!reportKey || reportKey === "all") return true;
+
+  const status = normalizeText(row.status || row.rawStatus);
+  const lifecycle = normalizeText(row.lifecycle);
+  const reason = normalizeText(row.reason);
+  const source = normalizeText(row.source);
+  const blob = `${status} ${lifecycle} ${reason} ${source}`;
+
+  if (reportKey === "success") {
+    return (
+      ["success", "successful", "active", "subscribed"].includes(status) ||
+      ["activation", "first", "new", "subscribe"].some((key) => lifecycle.includes(key)) ||
+      source.includes("subscription")
+    ) && !["fail", "churn", "renew"].some((key) => blob.includes(key));
+  }
+
+  if (reportKey === "renewal") {
+    return blob.includes("renew");
+  }
+
+  if (reportKey === "churn") {
+    return ["churn", "inactive", "unsubscribed", "unsubscribe", "suspended", "insufficient"].some(
+      (key) => blob.includes(key)
+    );
+  }
+
+  if (reportKey === "failed") {
+    return blob.includes("fail");
+  }
+
+  return true;
+};
+
+const matchesDateRange = (row, fromDate, toDate) => {
+  if (!fromDate && !toDate) return true;
+  const created = row.createdAt ? new Date(row.createdAt) : null;
+  if (!created || Number.isNaN(created.getTime())) return false;
+  if (fromDate && created < new Date(`${fromDate}T00:00:00`)) return false;
+  if (toDate && created > new Date(`${toDate}T23:59:59`)) return false;
+  return true;
+};
+
+const createdTime = (row) => {
+  const date = new Date(row?.createdAt || row?.updatedAt || 0);
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+};
+
+const sortNewestFirst = (list) =>
+  [...list].sort((a, b) => createdTime(b) - createdTime(a));
+
+const getRowAmount = (row) => {
+  const candidates = [
+    row?.chargingAmount,
+    row?.chargeAmount,
+    row?.amount,
+    row?.ghsAmount,
+    row?.charging_amount,
+    row?.mtn?.chargingAmount,
+    row?.payload?.chargingAmount,
+  ];
+  for (const value of candidates) {
+    const amount = Number(value);
+    if (Number.isFinite(amount) && amount !== 0) return amount;
+  }
+  const fallback = Number(candidates.find((value) => value != null) ?? 0);
+  return Number.isFinite(fallback) ? fallback : 0;
+};
+
+const startOfToday = () => {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
+const startOfMonth = () => {
+  const date = new Date();
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+};
+
+const mapApiSummary = (raw = {}) => ({
+  totalSubscribers: Number(
+    raw.totalSubscribers ??
+      raw.monthlySubscribers ??
+      raw.monthlySubscriber ??
+      raw.subscribers ??
+      0
+  ),
+  success: Number(
+    raw.success ??
+      raw.todaySubscribers ??
+      raw.todaySubscriber ??
+      raw.todaySuccess ??
+      0
+  ),
+  renewals: Number(
+    raw.renewals ?? raw.todayRenewals ?? raw.todayRenewal ?? raw.renewal ?? 0
+  ),
+  totalGhsAmount: Number(
+    raw.totalGhsAmount ??
+      raw.monthlyGhsAmount ??
+      raw.monthlyAmount ??
+      raw.ghsAmount ??
+      raw.totalAmount ??
+      0
+  ),
+});
+
+const computeDashboardSummary = (list) => {
+  const todayStart = startOfToday();
+  const monthStart = startOfMonth();
+  const now = new Date();
+  const monthlyMsisdn = new Set();
+  const todayMsisdn = new Set();
+  let todayRenewals = 0;
+  let monthlyGhs = 0;
+
+  for (const row of list) {
+    const created = new Date(row?.createdAt || row?.updatedAt);
+    if (Number.isNaN(created.getTime())) continue;
+
+    const amount = getRowAmount(row);
+    const isRenewal = matchesReport(row, "renewal");
+    const isFailed = matchesReport(row, "failed");
+    const isChurn = matchesReport(row, "churn");
+    const isSuccess =
+      matchesReport(row, "success") ||
+      (!isRenewal && !isFailed && !isChurn && Boolean(row.msisdn));
+
+    if (created >= monthStart && created <= now) {
+      if ((isSuccess || isRenewal) && !isFailed) {
+        monthlyGhs += amount;
+      }
+      if (isSuccess && !isRenewal && row.msisdn) {
+        monthlyMsisdn.add(String(row.msisdn));
+      }
+    }
+
+    if (created >= todayStart && created <= now) {
+      if (isRenewal) todayRenewals += 1;
+      if (isSuccess && !isRenewal && row.msisdn) {
+        todayMsisdn.add(String(row.msisdn));
+      }
+    }
+  }
+
+  return {
+    totalSubscribers: monthlyMsisdn.size,
+    success: todayMsisdn.size,
+    renewals: todayRenewals,
+    totalGhsAmount: monthlyGhs,
+  };
+};
+
 export default function DashboardPage({ defaultReport = "all" }) {
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
@@ -115,14 +271,20 @@ export default function DashboardPage({ defaultReport = "all" }) {
   const [appliedFromDate, setAppliedFromDate] = useState("");
   const [appliedToDate, setAppliedToDate] = useState("");
   const [report, setReport] = useState(defaultReport);
+  const [appliedReport, setAppliedReport] = useState(defaultReport);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [serverPaginated, setServerPaginated] = useState(false);
 
   const token = localStorage.getItem("token");
-  const headers = useMemo(() => ({ Authorization: `Bearer ${token}` }), [token]);
+  const headers = useMemo(
+    () => (token ? { Authorization: `Bearer ${token}` } : {}),
+    [token]
+  );
 
-  const fetchDashboard = useCallback(async () => {
+  const fetchDashboard = useCallback(async (signal) => {
     if (!token) {
       navigate("/admin/login");
       return;
@@ -130,51 +292,146 @@ export default function DashboardPage({ defaultReport = "all" }) {
 
     setLoading(true);
     try {
-      const params = {};
-      if (appliedFromDate) params.date = appliedFromDate;
-      if (report !== "all") params.report = report;
-      const res = await getAdminData("/dashboard", { headers, params });
-      if (res.data.success) {
-        setRows(res.data.data || []);
-        setSummary(res.data.summary || {});
+      const params = {
+        page: currentPage,
+        limit: rowsPerPage,
+        report: appliedReport,
+        sort: "desc",
+        sortBy: "createdAt",
+      };
+      if (appliedFromDate) {
+        params.fromDate = appliedFromDate;
+        params.date = appliedFromDate;
+      }
+      if (appliedToDate) params.toDate = appliedToDate;
+
+      const res = await getAdminData("/dashboard", { headers, params, signal });
+      const payload = res.data || {};
+      const list = Array.isArray(payload.data) ? payload.data : [];
+      const total = Number(
+        payload.total ??
+          payload.count ??
+          payload.pagination?.total ??
+          payload.meta?.total
+      );
+
+      setRows(sortNewestFirst(list));
+      if (Number.isFinite(total) && total >= 0) {
+        setServerPaginated(true);
+        setTotalRecords(total);
+      } else {
+        setServerPaginated(false);
+        setTotalRecords(list.length);
       }
     } catch (err) {
+      if (axios.isCancel?.(err) || err.code === "ERR_CANCELED" || err.name === "CanceledError") {
+        return;
+      }
       const message = err.response?.data?.message || "Unable to load dashboard data";
       Swal.fire("Dashboard Error", message, "error");
       if (err.response?.status === 401) navigate("/admin/login");
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  }, [appliedFromDate, headers, navigate, report, token]);
+  }, [
+    appliedFromDate,
+    appliedReport,
+    appliedToDate,
+    currentPage,
+    headers,
+    navigate,
+    rowsPerPage,
+    token,
+  ]);
+
+  const fetchSummary = useCallback(async (signal) => {
+    if (!token || defaultReport !== "all") return;
+
+    try {
+      let apiSummary = {};
+      try {
+        const statsRes = await getAdminData("/dashboard/summary", {
+          headers,
+          signal,
+          params: { report: "all" },
+        });
+        apiSummary = statsRes.data?.summary || statsRes.data || {};
+      } catch {
+        apiSummary = {};
+      }
+
+      const res = await getAdminData("/dashboard", {
+        headers,
+        signal,
+        params: {
+          page: 1,
+          limit: 10000,
+          report: "all",
+          sort: "desc",
+          sortBy: "createdAt",
+        },
+      });
+      const list = Array.isArray(res.data?.data) ? res.data.data : [];
+      if (res.data?.summary && typeof res.data.summary === "object") {
+        apiSummary = { ...apiSummary, ...res.data.summary };
+      }
+
+      const computed = computeDashboardSummary(list);
+      const mapped = mapApiSummary(apiSummary);
+      setSummary({
+        totalSubscribers: list.length ? computed.totalSubscribers : mapped.totalSubscribers,
+        success: list.length ? computed.success : mapped.success,
+        renewals: list.length ? computed.renewals : mapped.renewals,
+        totalGhsAmount: list.length ? computed.totalGhsAmount : mapped.totalGhsAmount,
+      });
+    } catch (err) {
+      if (axios.isCancel?.(err) || err.code === "ERR_CANCELED" || err.name === "CanceledError") {
+        return;
+      }
+    }
+  }, [defaultReport, headers, token]);
 
   useEffect(() => {
     setReport(defaultReport);
+    setAppliedReport(defaultReport);
     setCurrentPage(1);
+    setFromDate("");
+    setToDate("");
+    setAppliedFromDate("");
+    setAppliedToDate("");
   }, [defaultReport]);
 
   useEffect(() => {
-    fetchDashboard();
+    const controller = new AbortController();
+    fetchDashboard(controller.signal);
+    return () => controller.abort();
   }, [fetchDashboard]);
 
-  const filteredRows = useMemo(() => {
-    const from = appliedFromDate ? new Date(`${appliedFromDate}T00:00:00`) : null;
-    const to = appliedToDate ? new Date(`${appliedToDate}T23:59:59`) : null;
-
-    return rows.filter((row) => {
-      const created = row.createdAt ? new Date(row.createdAt) : null;
-      const dateMatch = (!from || !created || created >= from) && (!to || !created || created <= to);
-      return dateMatch;
-    });
-  }, [rows, appliedFromDate, appliedToDate]);
-
   useEffect(() => {
-    setCurrentPage(1);
-  }, [appliedFromDate, appliedToDate, report, rowsPerPage]);
+    if (defaultReport !== "all") return undefined;
+    const controller = new AbortController();
+    fetchSummary(controller.signal);
+    return () => controller.abort();
+  }, [defaultReport, fetchSummary]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredRows.length / rowsPerPage));
+  const filteredRows = useMemo(() => {
+    return sortNewestFirst(
+      rows.filter(
+        (row) =>
+          matchesReport(row, appliedReport) &&
+          matchesDateRange(row, appliedFromDate, appliedToDate)
+      )
+    );
+  }, [appliedFromDate, appliedReport, appliedToDate, rows]);
+
+  const displayRows = serverPaginated ? rows : filteredRows;
+  const recordCount = serverPaginated ? totalRecords : filteredRows.length;
+  const totalPages = Math.max(1, Math.ceil(recordCount / rowsPerPage) || 1);
   const safePage = Math.min(currentPage, totalPages);
   const pageStart = (safePage - 1) * rowsPerPage;
-  const paginatedRows = filteredRows.slice(pageStart, pageStart + rowsPerPage);
+  const paginatedRows = serverPaginated
+    ? displayRows
+    : displayRows.slice(pageStart, pageStart + rowsPerPage);
   const isDashboard = defaultReport === "all";
   const activeMeta = pageMeta[defaultReport] || pageMeta.all;
 
@@ -197,24 +454,51 @@ export default function DashboardPage({ defaultReport = "all" }) {
     },
   ];
 
-  const handleExport = () => {
-    if (!filteredRows.length) {
+  const handleExport = async () => {
+    try {
+      const params = {
+        page: 1,
+        limit: 10000,
+        report: appliedReport,
+        sort: "desc",
+        sortBy: "createdAt",
+      };
+      if (appliedFromDate) {
+        params.fromDate = appliedFromDate;
+        params.date = appliedFromDate;
+      }
+      if (appliedToDate) params.toDate = appliedToDate;
+
+      const res = await getAdminData("/dashboard", { headers, params });
+      const list = Array.isArray(res.data?.data) ? res.data.data : [];
+      const exportRows = sortNewestFirst(
+        list.filter(
+          (row) =>
+            matchesReport(row, appliedReport) &&
+            matchesDateRange(row, appliedFromDate, appliedToDate)
+        )
+      );
+
+      if (!exportRows.length) {
+        Swal.fire({
+          icon: "info",
+          title: "No Data Found",
+          text: "There are no records available to export.",
+          confirmButtonColor: "#1683f5",
+        });
+        return;
+      }
+      exportCsv(exportRows);
       Swal.fire({
-        icon: "info",
-        title: "No Data Found",
-        text: "There are no records available to export.",
-        confirmButtonColor: "#1683f5",
+        icon: "success",
+        title: "Export Started",
+        text: `${exportRows.length} records are being exported.`,
+        timer: 1600,
+        showConfirmButton: false,
       });
-      return;
+    } catch (err) {
+      Swal.fire("Export Error", err.response?.data?.message || "Unable to export records.", "error");
     }
-    exportCsv(filteredRows);
-    Swal.fire({
-      icon: "success",
-      title: "Export Started",
-      text: `${filteredRows.length} records are being exported.`,
-      timer: 1600,
-      showConfirmButton: false,
-    });
   };
 
   const handleApplyFilter = () => {
@@ -228,18 +512,10 @@ export default function DashboardPage({ defaultReport = "all" }) {
       return;
     }
 
-    if (!fromDate && !toDate && report === defaultReport) {
-      Swal.fire({
-        icon: "info",
-        title: "No Filter Selected",
-        text: "Please select a date or status before applying the filter.",
-        confirmButtonColor: "#1683f5",
-      });
-      return;
-    }
-
     setAppliedFromDate(fromDate);
     setAppliedToDate(toDate);
+    setAppliedReport(isDashboard ? report : defaultReport);
+    setCurrentPage(1);
     Swal.fire({
       icon: "success",
       title: "Filter Applied",
@@ -248,6 +524,10 @@ export default function DashboardPage({ defaultReport = "all" }) {
       showConfirmButton: false,
     });
   };
+
+  useEffect(() => {
+    if (currentPage !== safePage) setCurrentPage(safePage);
+  }, [currentPage, safePage]);
 
   return (
     <div className="dashboard-page">
@@ -274,14 +554,20 @@ export default function DashboardPage({ defaultReport = "all" }) {
           <div className="dashboard-table-header">
             <div>
               <h2>{activeMeta.tableTitle}</h2>
-              <p>{filteredRows.length} records found</p>
+              <p>{recordCount} records found</p>
             </div>
 
             <div className="dashboard-actions">
               <button className="dashboard-primary dashboard-action-button" onClick={handleExport}>
                 <Download size={16} /> Export CSV
               </button>
-              <button className="dashboard-muted dashboard-action-button" onClick={fetchDashboard}>
+              <button
+                className="dashboard-muted dashboard-action-button"
+                onClick={() => {
+                  fetchDashboard();
+                  fetchSummary();
+                }}
+              >
                 <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Refresh
               </button>
               <label className="dashboard-field">
@@ -321,8 +607,8 @@ export default function DashboardPage({ defaultReport = "all" }) {
                 </tr>
               </thead>
               <tbody>
-                {paginatedRows.map((row) => (
-                  <tr key={`${row.source}-${row.id}`}>
+                {paginatedRows.map((row, index) => (
+                  <tr key={`${row.source || "row"}-${row.id || row._id || row.msisdn || "item"}-${row.createdAt || index}`}>
                     <td>{row.msisdn || "-"}</td>
                     <td>{row.offerCode || "-"}</td>
                     <td>{row.reason || "-"}</td>
@@ -349,7 +635,13 @@ export default function DashboardPage({ defaultReport = "all" }) {
           <div className="dashboard-table-footer">
             <label>
               Rows per page
-              <select value={rowsPerPage} onChange={(e) => setRowsPerPage(Number(e.target.value))}>
+              <select
+                value={rowsPerPage}
+                onChange={(e) => {
+                  setRowsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+              >
                 <option value="5">5</option>
                 <option value="10">10</option>
                 <option value="20">20</option>
@@ -358,8 +650,8 @@ export default function DashboardPage({ defaultReport = "all" }) {
             </label>
             <div className="dashboard-pagination">
               <span>
-                {filteredRows.length
-                  ? `${pageStart + 1}-${Math.min(pageStart + rowsPerPage, filteredRows.length)} of ${filteredRows.length}`
+                {recordCount
+                  ? `${pageStart + 1}-${Math.min(pageStart + paginatedRows.length, recordCount)} of ${recordCount}`
                   : "0 records"}
               </span>
               <button disabled={safePage === 1} onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}>
