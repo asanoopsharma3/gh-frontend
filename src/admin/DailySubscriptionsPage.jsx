@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-import { Download, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, RefreshCw } from "lucide-react";
 import "./DashboardPage.css";
 import { getDailySubscriptionApi } from "./adminApi";
 import { toGhs } from "./buildDailyReport";
@@ -9,11 +9,9 @@ import {
   EARLIEST_DATE,
   clampRangeFromStart,
   ghanaDateValue,
+  ghanaMonthStart,
   maxToFromFrom,
 } from "./dateRange";
-
-const ghanaToday = () =>
-  new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Accra" });
 
 const formatDateTime = (value) => {
   if (!value) return "-";
@@ -30,21 +28,10 @@ const formatDateTime = (value) => {
 };
 
 const formatGhs = (value) => `GHC ${Number(value || 0).toFixed(2)}`;
-
-const rowPrice = (row) => Number(row?.priceGhs ?? row?.chargingAmount ?? 0);
+const rowPrice = (row) => Number(row?.priceGhs ?? row?.chargingAmount ?? 1) || 1;
 
 const exportCsv = (days) => {
-  const headers = [
-    "Date",
-    "MSISDN",
-    "Plan",
-    "Offer Code",
-    "Price (GHS)",
-    "Source",
-    "Flow",
-    "Status",
-    "Created At",
-  ];
+  const headers = ["Date", "MSISDN", "Plan", "Offer Code", "Price (GHS)", "Status", "Created At"];
   const csvRows = days.flatMap((day) =>
     (day.subscriptions || []).map((row) => [
       day.date,
@@ -52,8 +39,6 @@ const exportCsv = (days) => {
       row.planName || "Daily Subscription",
       row.offerCode,
       Number(rowPrice(row)).toFixed(2),
-      row.source,
-      row.flow,
       row.status || row.type || "new",
       formatDateTime(row.createdAt),
     ])
@@ -72,12 +57,16 @@ const exportCsv = (days) => {
 
 export default function DailySubscriptionsPage() {
   const navigate = useNavigate();
-  const today = ghanaToday();
-  const [fromDate, setFromDate] = useState(today);
+  const today = ghanaDateValue();
+  const monthStart = ghanaMonthStart();
+  const [fromDate, setFromDate] = useState(monthStart);
   const [toDate, setToDate] = useState(today);
-  const [appliedFromDate, setAppliedFromDate] = useState(today);
+  const [appliedFromDate, setAppliedFromDate] = useState(monthStart);
   const [appliedToDate, setAppliedToDate] = useState(today);
   const [report, setReport] = useState(null);
+  const [openDate, setOpenDate] = useState("");
+  const [detailPage, setDetailPage] = useState(1);
+  const [detailRowsPerPage, setDetailRowsPerPage] = useState(10);
   const [loading, setLoading] = useState(false);
   const token = localStorage.getItem("token");
   const headers = useMemo(
@@ -103,6 +92,8 @@ export default function DailySubscriptionsPage() {
         },
       });
       setReport(res.data);
+      setOpenDate("");
+      setDetailPage(1);
     } catch (err) {
       if (err.response?.status === 401) {
         navigate("/admin/login");
@@ -111,10 +102,7 @@ export default function DailySubscriptionsPage() {
       Swal.fire({
         icon: "error",
         title: "Unable to load daily subscriptions",
-        text:
-          (typeof err.response?.data?.message === "string" && err.response.data.message) ||
-          err.message ||
-          "Dashboard API se daily data load nahi ho paya.",
+        text: "Selected date range ke subscriber count load nahi ho paye.",
       });
     } finally {
       setLoading(false);
@@ -129,63 +117,24 @@ export default function DailySubscriptionsPage() {
     const range = clampRangeFromStart(fromDate || today, toDate || fromDate || today);
     setFromDate(range.from);
     setToDate(range.to);
-    if (range.from === appliedFromDate && range.to === appliedToDate) {
-      fetchReport();
-      return;
-    }
     setAppliedFromDate(range.from);
     setAppliedToDate(range.to);
   };
 
-  const handleToday = () => {
-    setFromDate(today);
-    setToDate(today);
-    setAppliedFromDate(today);
-    setAppliedToDate(today);
-  };
-
   const summary = report?.summary || {};
   const daily = report?.daily || [];
-  const isDailyView = report?.view === "daily" || appliedFromDate === appliedToDate;
-  const totalRows = daily.reduce((sum, day) => sum + (day.subscriptions?.length || 0), 0);
-  const dailyPlan = report?.plans?.find((plan) => plan.billing === "daily") || {
-    name: "Daily Subscription",
-    amountGhs: 1,
-  };
-  dailyPlan.amountGhs = toGhs(dailyPlan.amountGhs, 1) || 1;
-
-  const cards = [
-    {
-      label: isDailyView ? "Today / Selected Day" : "Range Total",
-      value: summary.newSubscriptions || 0,
-      note: "New daily activations only",
-    },
-    {
-      label: "Unique Users",
-      value: summary.uniqueUsers || 0,
-      note: "Deduped MSISDNs",
-    },
-    {
-      label: "New Revenue",
-      value: formatGhs(summary.newRevenueGhs),
-      note: `${dailyPlan.name} · ${formatGhs(dailyPlan.amountGhs)} each`,
-    },
-    {
-      label: "Renewals",
-      value: summary.renewals || 0,
-      note: "Daily billing, not counted as new",
-    },
-    {
-      label: "Already Subscribed",
-      value: summary.alreadySubscribed || 0,
-      note: "Repeat consent, not counted as new",
-    },
-    {
-      label: "Top-ups",
-      value: summary.topup || 0,
-      note: `Extra questions · ${formatGhs(summary.topupRevenueGhs)}`,
-    },
-  ];
+  const daysWithSubs = daily.filter((day) => Number(day.newSubscriptions || 0) > 0);
+  const openDay = daily.find((day) => day.date === openDate) || null;
+  const detailRows = openDay?.subscriptions || [];
+  const detailTotal = detailRows.length;
+  const detailTotalPages = Math.max(1, Math.ceil(detailTotal / detailRowsPerPage) || 1);
+  const safeDetailPage = Math.min(detailPage, detailTotalPages);
+  const detailStart = (safeDetailPage - 1) * detailRowsPerPage;
+  const pagedDetailRows = detailRows.slice(detailStart, detailStart + detailRowsPerPage);
+  const totalRows = daysWithSubs.reduce((sum, day) => sum + Number(day.newSubscriptions || 0), 0);
+  const totalPrize = Number(
+    daysWithSubs.reduce((sum, day) => sum + Number(day.revenueGhs || 0), 0).toFixed(2)
+  );
 
   return (
     <div className="dashboard-page">
@@ -193,51 +142,49 @@ export default function DailySubscriptionsPage() {
         <div className="dashboard-page-head">
           <h1 className="dashboard-title">Daily Subscriptions</h1>
           <p>
-            New MTN daily activations only. Renewals, already-subscribed, failed consent,
-            churn and top-ups are excluded from this table. Price is {formatGhs(dailyPlan.amountGhs)} per
-            successful daily subscribe.
+            Date-wise new daily subscribers. Count pe click karke us din ke MSISDN records kholo.
+            Price GHC 1.00 per successful daily subscribe.
           </p>
         </div>
 
         <section className="dashboard-card-grid dashboard-card-grid-3">
-          {cards.map((card) => (
-            <article className="dashboard-summary-card" key={card.label}>
-              <div>
-                <h2>{card.label}</h2>
-                <strong>{card.value}</strong>
-                <p>{card.note}</p>
-              </div>
-            </article>
-          ))}
+          <article className="dashboard-summary-card">
+            <div>
+              <h2>Total Subscribers</h2>
+              <strong>{summary.newSubscriptions || totalRows || 0}</strong>
+              <p>{appliedFromDate} to {appliedToDate}</p>
+            </div>
+          </article>
+          <article className="dashboard-summary-card">
+            <div>
+              <h2>Total Prize</h2>
+              <strong>{formatGhs(summary.newRevenueGhs || totalPrize)}</strong>
+              <p>GHC 1.00 × subscriber count</p>
+            </div>
+          </article>
+          <article className="dashboard-summary-card">
+            <div>
+              <h2>Days</h2>
+              <strong>{daysWithSubs.length}</strong>
+              <p>Days with at least one subscribe</p>
+            </div>
+          </article>
         </section>
 
         <section className="dashboard-table-card">
           <div className="dashboard-table-header">
             <div>
-              <h2>{isDailyView ? "New Subscriptions" : "Date-wise New Subscriptions"}</h2>
+              <h2>Per Day Count</h2>
               <p>
-                {appliedFromDate === appliedToDate
-                  ? `${appliedFromDate} · ${totalRows} records · ${formatGhs(summary.newRevenueGhs)}`
-                  : `${appliedFromDate} to ${appliedToDate} · ${totalRows} records · ${formatGhs(summary.newRevenueGhs)}`}
+                {appliedFromDate} to {appliedToDate} · {totalRows} subscribers · {formatGhs(totalPrize)}
               </p>
             </div>
             <div className="dashboard-actions dashboard-actions-daily">
-              <button
-                className="dashboard-primary dashboard-action-button"
-                onClick={() => exportCsv(daily)}
-                type="button"
-              >
+              <button className="dashboard-primary dashboard-action-button" onClick={() => exportCsv(daysWithSubs)} type="button">
                 <Download size={16} /> Export CSV
               </button>
-              <button
-                className="dashboard-muted dashboard-action-button"
-                onClick={fetchReport}
-                type="button"
-              >
+              <button className="dashboard-muted dashboard-action-button" onClick={fetchReport} type="button">
                 <RefreshCw size={16} className={loading ? "animate-spin" : ""} /> Refresh
-              </button>
-              <button className="dashboard-muted dashboard-action-button" onClick={handleToday} type="button">
-                Today
               </button>
               <label className="dashboard-field">
                 <span>FROM</span>
@@ -269,62 +216,141 @@ export default function DailySubscriptionsPage() {
             </div>
           </div>
 
-          {daily.map((day) => (
-            <div key={day.date}>
-              {!isDailyView && (
-                <div className="dashboard-table-header">
-                  <div>
-                    <h2>{day.date}</h2>
-                    <p>
-                      {day.newSubscriptions} new subscriptions · {formatGhs(day.revenueGhs)}
-                    </p>
-                  </div>
-                </div>
-              )}
-              <div className="dashboard-table-scroll">
-                <table className="dashboard-table">
-                  <thead>
-                    <tr>
-                      <th>MSISDN</th>
-                      <th>Plan</th>
-                      <th>Offer Code</th>
-                      <th>Price</th>
-                      <th>Source</th>
-                      <th>Flow</th>
-                      <th>Status</th>
-                      <th>Created At</th>
+          <div className="dashboard-table-scroll">
+            <table className="dashboard-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Subscribers</th>
+                  <th>Prize</th>
+                </tr>
+              </thead>
+              <tbody>
+                {daily.map((day) => (
+                  <tr key={day.date} className={openDate === day.date ? "dashboard-row-open" : ""}>
+                    <td>{day.date}</td>
+                    <td>
+                      {day.newSubscriptions ? (
+                        <button
+                          type="button"
+                          className="dashboard-count-link"
+                          onClick={() => {
+                            setOpenDate((current) => (current === day.date ? "" : day.date));
+                            setDetailPage(1);
+                          }}
+                        >
+                          {day.newSubscriptions}
+                        </button>
+                      ) : (
+                        0
+                      )}
+                    </td>
+                    <td>{formatGhs(day.revenueGhs)}</td>
+                  </tr>
+                ))}
+                {!loading && daily.length === 0 && (
+                  <tr>
+                    <td className="dashboard-empty" colSpan="3">
+                      No daily subscriber counts found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        {openDay && (
+          <section className="dashboard-table-card">
+            <div className="dashboard-table-header">
+              <div>
+                <h2>{openDay.date} subscribers</h2>
+                <p>
+                  {openDay.newSubscriptions} records · {formatGhs(openDay.revenueGhs)}
+                </p>
+              </div>
+              <button
+                className="dashboard-muted dashboard-action-button"
+                type="button"
+                onClick={() => {
+                  setOpenDate("");
+                  setDetailPage(1);
+                }}
+              >
+                <ChevronLeft size={16} /> Back to counts
+              </button>
+            </div>
+            <div className="dashboard-table-scroll">
+              <table className="dashboard-table">
+                <thead>
+                  <tr>
+                    <th>MSISDN</th>
+                    <th>Plan</th>
+                    <th>Offer Code</th>
+                    <th>Price</th>
+                    <th>Status</th>
+                    <th>Created At</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pagedDetailRows.map((row, index) => (
+                    <tr key={`${openDay.date}-${row.msisdn}-${row.createdAt || index}`}>
+                      <td>{row.msisdn || "-"}</td>
+                      <td>{row.planName || "Daily Subscription"}</td>
+                      <td>{row.offerCode || "-"}</td>
+                      <td>{formatGhs(rowPrice(row))}</td>
+                      <td>
+                        <span className="dashboard-status dashboard-status-success">
+                          {row.type || row.status || "new"}
+                        </span>
+                      </td>
+                      <td>{formatDateTime(row.createdAt)}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {(day.subscriptions || []).map((row, index) => (
-                      <tr key={`${day.date}-${row.msisdn}-${row.createdAt || index}`}>
-                        <td>{row.msisdn || "-"}</td>
-                        <td>{row.planName || "Daily Subscription"}</td>
-                        <td>{row.offerCode || "-"}</td>
-                        <td>{formatGhs(rowPrice(row))}</td>
-                        <td>{row.source || "-"}</td>
-                        <td>{row.flow || "-"}</td>
-                        <td>
-                          <span className="dashboard-status dashboard-status-success">
-                            {row.type || row.status || "new"}
-                          </span>
-                        </td>
-                        <td>{formatDateTime(row.createdAt)}</td>
-                      </tr>
-                    ))}
-                    {!loading && (day.subscriptions || []).length === 0 && (
-                      <tr>
-                        <td className="dashboard-empty" colSpan="8">
-                          No new daily subscriptions found.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="dashboard-table-footer">
+              <label>
+                Rows per page
+                <select
+                  value={detailRowsPerPage}
+                  onChange={(e) => {
+                    setDetailRowsPerPage(Number(e.target.value));
+                    setDetailPage(1);
+                  }}
+                >
+                  <option value="5">5</option>
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                </select>
+              </label>
+              <div className="dashboard-pagination">
+                <span>
+                  {detailTotal
+                    ? `${detailStart + 1}-${Math.min(detailStart + pagedDetailRows.length, detailTotal)} of ${detailTotal}`
+                    : "0 records"}
+                </span>
+                <button
+                  type="button"
+                  disabled={safeDetailPage === 1}
+                  onClick={() => setDetailPage((page) => Math.max(1, page - 1))}
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <button type="button" className="dashboard-page-active">{safeDetailPage}</button>
+                <button
+                  type="button"
+                  disabled={safeDetailPage === detailTotalPages}
+                  onClick={() => setDetailPage((page) => Math.min(detailTotalPages, page + 1))}
+                >
+                  <ChevronRight size={16} />
+                </button>
               </div>
             </div>
-          ))}
-        </section>
+          </section>
+        )}
       </div>
     </div>
   );

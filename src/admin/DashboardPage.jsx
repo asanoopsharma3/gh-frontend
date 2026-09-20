@@ -9,7 +9,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import "./DashboardPage.css";
-import { getAdminApi, getDashboardRows } from "./adminApi";
+import { getAdminApi, getDashboardRows, getSubscriberReport } from "./adminApi";
 import { toGhs } from "./buildDailyReport";
 import {
   EARLIEST_DATE,
@@ -258,16 +258,19 @@ export default function DashboardPage({ defaultReport = "all" }) {
 
     setLoading(true);
     try {
+      const range = clampRangeFromStart(appliedFromDate, appliedToDate);
       const params = {
         page: currentPage,
         limit: rowsPerPage,
         report: appliedReport,
+        fromDate: range.from,
+        toDate: range.to,
       };
-      const range = clampRangeFromStart(appliedFromDate, appliedToDate);
-      params.fromDate = range.from;
-      params.toDate = range.to;
 
-      const res = await getAdminData("/dashboard", { headers, params, signal });
+      const useSimpleList = appliedReport === "success" || appliedReport === "all";
+      const res = useSimpleList
+        ? await getSubscriberReport({ headers, params, signal })
+        : await getAdminData("/dashboard", { headers, params, signal });
       const payload = res.data || {};
       const list = Array.isArray(payload.data) ? payload.data : [];
       const total = Number(
@@ -278,7 +281,8 @@ export default function DashboardPage({ defaultReport = "all" }) {
       );
 
       setRows(sortNewestFirst(list));
-      const useClientPaging = list.length > rowsPerPage;
+      if (payload.summary) setSummary(mapApiSummary(payload.summary));
+      const useClientPaging = useSimpleList || list.length > rowsPerPage;
       if (useClientPaging) {
         setServerPaginated(false);
         setTotalRecords(list.length);
@@ -314,29 +318,19 @@ export default function DashboardPage({ defaultReport = "all" }) {
     if (!token || defaultReport !== "all") return;
 
     try {
-      const params = {
-        page: 1,
-        limit: 50,
-        report: "all",
-      };
       const range = clampRangeFromStart(appliedFromDate, appliedToDate);
-      params.fromDate = range.from;
-      params.toDate = range.to;
-      const res = await getAdminData("/dashboard", {
+      const res = await getSubscriberReport({
         headers,
         signal,
-        params,
+        params: {
+          page: 1,
+          limit: 50,
+          report: "all",
+          fromDate: range.from,
+          toDate: range.to,
+        },
       });
-      const payload = res.data || {};
-      const list = Array.isArray(payload.data) ? payload.data : [];
-      const apiSummary = payload.summary || {};
-      const computed = computeDashboardSummary(list);
-      const mapped = mapApiSummary(apiSummary);
-      if (Array.isArray(payload.daily)) {
-        setSummary(mapped);
-      } else {
-        setSummary(computed);
-      }
+      setSummary(mapApiSummary(res.data?.summary || {}));
     } catch (err) {
       if (axios.isCancel?.(err) || err.code === "ERR_CANCELED" || err.name === "CanceledError") {
         return;
