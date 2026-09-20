@@ -11,6 +11,13 @@ if [ ! -d .git ]; then
   exit 1
 fi
 
+if [ -n "$(git status --porcelain)" ]; then
+  echo "Error: uncommitted frontend files exist."
+  echo "Commit and push them first, otherwise git reset --hard will drop Daily Subscriptions UI."
+  git status -sb
+  exit 1
+fi
+
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 echo "==> Syncing ${BRANCH} with origin/${BRANCH}"
 git fetch origin

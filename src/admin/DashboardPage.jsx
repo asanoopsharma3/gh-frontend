@@ -188,6 +188,40 @@ const startOfMonth = () => {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 };
 
+const MAX_RANGE_DAYS = 31;
+
+const ghanaDateValue = (date = new Date()) =>
+  date.toLocaleDateString("en-CA", { timeZone: "Africa/Accra" });
+
+const ghanaMonthStart = () => {
+  const [year, month] = ghanaDateValue().split("-");
+  return `${year}-${month}-01`;
+};
+
+const shiftDate = (value, days) => {
+  const date = new Date(`${value}T00:00:00`);
+  date.setDate(date.getDate() + days);
+  return date.toLocaleDateString("en-CA");
+};
+
+const clampToOneMonth = (fromDate, toDate) => {
+  const today = ghanaDateValue();
+  let to = toDate || today;
+  let from = fromDate || ghanaMonthStart();
+
+  if (from > to) {
+    const swap = from;
+    from = to;
+    to = swap;
+  }
+
+  const minFrom = shiftDate(to, -(MAX_RANGE_DAYS - 1));
+  const clamped = from < minFrom;
+  if (clamped) from = minFrom;
+
+  return { from, to, clamped };
+};
+
 const mapApiSummary = (raw = {}) => ({
   totalSubscribers: Number(
     raw.totalSubscribers ??
@@ -266,10 +300,10 @@ export default function DashboardPage({ defaultReport = "all" }) {
   const navigate = useNavigate();
   const [rows, setRows] = useState([]);
   const [summary, setSummary] = useState({});
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [appliedFromDate, setAppliedFromDate] = useState("");
-  const [appliedToDate, setAppliedToDate] = useState("");
+  const [fromDate, setFromDate] = useState(ghanaMonthStart());
+  const [toDate, setToDate] = useState(ghanaDateValue());
+  const [appliedFromDate, setAppliedFromDate] = useState(ghanaMonthStart());
+  const [appliedToDate, setAppliedToDate] = useState(ghanaDateValue());
   const [report, setReport] = useState(defaultReport);
   const [appliedReport, setAppliedReport] = useState(defaultReport);
   const [loading, setLoading] = useState(false);
@@ -299,11 +333,10 @@ export default function DashboardPage({ defaultReport = "all" }) {
         sort: "desc",
         sortBy: "createdAt",
       };
-      if (appliedFromDate) {
-        params.fromDate = appliedFromDate;
-        params.date = appliedFromDate;
-      }
-      if (appliedToDate) params.toDate = appliedToDate;
+      const range = clampToOneMonth(appliedFromDate, appliedToDate);
+      params.fromDate = range.from;
+      params.toDate = range.to;
+      params.date = range.from;
 
       const res = await getAdminData("/dashboard", { headers, params, signal });
       const payload = res.data || {};
@@ -348,57 +381,47 @@ export default function DashboardPage({ defaultReport = "all" }) {
     if (!token || defaultReport !== "all") return;
 
     try {
-      let apiSummary = {};
-      try {
-        const statsRes = await getAdminData("/dashboard/summary", {
-          headers,
-          signal,
-          params: { report: "all" },
-        });
-        apiSummary = statsRes.data?.summary || statsRes.data || {};
-      } catch {
-        apiSummary = {};
-      }
-
+      const params = {
+        page: 1,
+        limit: 50,
+        report: "all",
+        sort: "desc",
+        sortBy: "createdAt",
+      };
+      const range = clampToOneMonth(appliedFromDate, appliedToDate);
+      params.fromDate = range.from;
+      params.toDate = range.to;
       const res = await getAdminData("/dashboard", {
         headers,
         signal,
-        params: {
-          page: 1,
-          limit: 10000,
-          report: "all",
-          sort: "desc",
-          sortBy: "createdAt",
-        },
+        params,
       });
-      const list = Array.isArray(res.data?.data) ? res.data.data : [];
-      if (res.data?.summary && typeof res.data.summary === "object") {
-        apiSummary = { ...apiSummary, ...res.data.summary };
-      }
-
+      const payload = res.data || {};
+      const list = Array.isArray(payload.data) ? payload.data : [];
+      const apiSummary = payload.summary || {};
       const computed = computeDashboardSummary(list);
       const mapped = mapApiSummary(apiSummary);
       setSummary({
-        totalSubscribers: list.length ? computed.totalSubscribers : mapped.totalSubscribers,
-        success: list.length ? computed.success : mapped.success,
-        renewals: list.length ? computed.renewals : mapped.renewals,
-        totalGhsAmount: list.length ? computed.totalGhsAmount : mapped.totalGhsAmount,
+        totalSubscribers: mapped.totalSubscribers || computed.totalSubscribers,
+        success: mapped.success || computed.success,
+        renewals: mapped.renewals || computed.renewals,
+        totalGhsAmount: mapped.totalGhsAmount || computed.totalGhsAmount,
       });
     } catch (err) {
       if (axios.isCancel?.(err) || err.code === "ERR_CANCELED" || err.name === "CanceledError") {
         return;
       }
     }
-  }, [defaultReport, headers, token]);
+  }, [appliedFromDate, appliedToDate, defaultReport, headers, token]);
 
   useEffect(() => {
     setReport(defaultReport);
     setAppliedReport(defaultReport);
     setCurrentPage(1);
-    setFromDate("");
-    setToDate("");
-    setAppliedFromDate("");
-    setAppliedToDate("");
+    setFromDate(ghanaMonthStart());
+    setToDate(ghanaDateValue());
+    setAppliedFromDate(ghanaMonthStart());
+    setAppliedToDate(ghanaDateValue());
   }, [defaultReport]);
 
   useEffect(() => {
@@ -458,16 +481,15 @@ export default function DashboardPage({ defaultReport = "all" }) {
     try {
       const params = {
         page: 1,
-        limit: 10000,
+        limit: 500,
         report: appliedReport,
         sort: "desc",
         sortBy: "createdAt",
       };
-      if (appliedFromDate) {
-        params.fromDate = appliedFromDate;
-        params.date = appliedFromDate;
-      }
-      if (appliedToDate) params.toDate = appliedToDate;
+      const range = clampToOneMonth(appliedFromDate, appliedToDate);
+      params.fromDate = range.from;
+      params.toDate = range.to;
+      params.date = range.from;
 
       const res = await getAdminData("/dashboard", { headers, params });
       const list = Array.isArray(res.data?.data) ? res.data.data : [];
@@ -502,7 +524,7 @@ export default function DashboardPage({ defaultReport = "all" }) {
   };
 
   const handleApplyFilter = () => {
-    if (fromDate && toDate && new Date(fromDate) > new Date(toDate)) {
+    if (fromDate && toDate && fromDate > toDate) {
       Swal.fire({
         icon: "warning",
         title: "Invalid Date Range",
@@ -512,16 +534,22 @@ export default function DashboardPage({ defaultReport = "all" }) {
       return;
     }
 
-    setAppliedFromDate(fromDate);
-    setAppliedToDate(toDate);
+    const range = clampToOneMonth(fromDate, toDate);
+    setFromDate(range.from);
+    setToDate(range.to);
+    setAppliedFromDate(range.from);
+    setAppliedToDate(range.to);
     setAppliedReport(isDashboard ? report : defaultReport);
     setCurrentPage(1);
     Swal.fire({
-      icon: "success",
-      title: "Filter Applied",
-      text: "Dashboard data has been filtered successfully.",
-      timer: 1400,
+      icon: range.clamped ? "warning" : "success",
+      title: range.clamped ? "Range Limited To 1 Month" : "Filter Applied",
+      text: range.clamped
+        ? `Dashboard loads at most ${MAX_RANGE_DAYS} days. Showing ${range.from} to ${range.to}.`
+        : "Dashboard data has been filtered successfully.",
+      timer: range.clamped ? 2200 : 1400,
       showConfirmButton: false,
+      confirmButtonColor: "#1683f5",
     });
   };
 
@@ -554,7 +582,9 @@ export default function DashboardPage({ defaultReport = "all" }) {
           <div className="dashboard-table-header">
             <div>
               <h2>{activeMeta.tableTitle}</h2>
-              <p>{recordCount} records found</p>
+              <p>
+                {recordCount} records found · {appliedFromDate} to {appliedToDate} (max 1 month)
+              </p>
             </div>
 
             <div className="dashboard-actions">
@@ -572,11 +602,23 @@ export default function DashboardPage({ defaultReport = "all" }) {
               </button>
               <label className="dashboard-field">
                 <span>FROM</span>
-                <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+                <input
+                  type="date"
+                  value={fromDate}
+                  min={shiftDate(toDate || ghanaDateValue(), -(MAX_RANGE_DAYS - 1))}
+                  max={toDate || ghanaDateValue()}
+                  onChange={(e) => setFromDate(e.target.value)}
+                />
               </label>
               <label className="dashboard-field">
                 <span>TO</span>
-                <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+                <input
+                  type="date"
+                  value={toDate}
+                  min={fromDate || ghanaMonthStart()}
+                  max={ghanaDateValue()}
+                  onChange={(e) => setToDate(e.target.value)}
+                />
               </label>
               {isDashboard && <label className="dashboard-field">
                 <span>STATUS</span>
