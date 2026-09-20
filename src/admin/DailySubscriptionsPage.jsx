@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import Swal from "sweetalert2";
 import { Download, RefreshCw } from "lucide-react";
 import "./DashboardPage.css";
-import { ADMIN_API_BASE } from "../config/api";
+import { getDailySubscriptionApi } from "./adminApi";
 
 const ghanaToday = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Accra" });
@@ -87,11 +86,13 @@ export default function DailySubscriptionsPage() {
 
     setLoading(true);
     try {
-      const res = await axios.get(`${ADMIN_API_BASE}/daily-subscriptions`, {
+      const res = await getDailySubscriptionApi({
         headers,
         params: {
           from: appliedFromDate,
           to: appliedToDate,
+          fromDate: appliedFromDate,
+          toDate: appliedToDate,
         },
       });
       setReport(res.data);

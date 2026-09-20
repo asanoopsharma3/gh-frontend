@@ -9,9 +9,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import "./DashboardPage.css";
-import { ADMIN_API_BASE } from "../config/api";
-
-const API_BASE_URLS = [ADMIN_API_BASE];
+import { getAdminApi } from "./adminApi";
 
 const reportTabs = [
   { key: "all", label: "All Status" },
@@ -93,18 +91,7 @@ const exportCsv = (rows) => {
   document.body.removeChild(link);
 };
 
-const getAdminData = async (path, config) => {
-  let lastError;
-  for (const baseUrl of API_BASE_URLS) {
-    try {
-      return await axios.get(`${baseUrl}${path}`, config);
-    } catch (error) {
-      lastError = error;
-      if (![404, 405].includes(error.response?.status)) throw error;
-    }
-  }
-  throw lastError;
-};
+const getAdminData = async (path, config) => getAdminApi(path, config);
 
 const normalizeText = (value) => String(value || "").toLowerCase();
 
@@ -119,10 +106,11 @@ const matchesReport = (row, reportKey) => {
 
   if (reportKey === "success") {
     return (
-      ["success", "successful", "active", "subscribed"].includes(status) ||
-      ["activation", "first", "new", "subscribe"].some((key) => lifecycle.includes(key)) ||
-      source.includes("subscription")
-    ) && !["fail", "churn", "renew"].some((key) => blob.includes(key));
+      ["success", "successful", "active", "subscribed", "a", "200", "0", "00"].includes(status) ||
+      ["activation", "first", "new", "subscribe", "sub"].some((key) => lifecycle === key || lifecycle.startsWith(`${key}`)) ||
+      source.includes("sdp") ||
+      source.includes("user")
+    ) && !["fail", "churn", "renew", "unsub"].some((key) => blob.includes(key));
   }
 
   if (reportKey === "renewal") {
@@ -401,11 +389,12 @@ export default function DashboardPage({ defaultReport = "all" }) {
       const apiSummary = payload.summary || {};
       const computed = computeDashboardSummary(list);
       const mapped = mapApiSummary(apiSummary);
+      const hasApiSummary = Boolean(payload.summary);
       setSummary({
-        totalSubscribers: mapped.totalSubscribers || computed.totalSubscribers,
-        success: mapped.success || computed.success,
-        renewals: mapped.renewals || computed.renewals,
-        totalGhsAmount: mapped.totalGhsAmount || computed.totalGhsAmount,
+        totalSubscribers: hasApiSummary ? mapped.totalSubscribers : computed.totalSubscribers,
+        success: hasApiSummary ? mapped.success : computed.success,
+        renewals: hasApiSummary ? mapped.renewals : computed.renewals,
+        totalGhsAmount: hasApiSummary ? mapped.totalGhsAmount : computed.totalGhsAmount,
       });
     } catch (err) {
       if (axios.isCancel?.(err) || err.code === "ERR_CANCELED" || err.name === "CanceledError") {
@@ -493,13 +482,7 @@ export default function DashboardPage({ defaultReport = "all" }) {
 
       const res = await getAdminData("/dashboard", { headers, params });
       const list = Array.isArray(res.data?.data) ? res.data.data : [];
-      const exportRows = sortNewestFirst(
-        list.filter(
-          (row) =>
-            matchesReport(row, appliedReport) &&
-            matchesDateRange(row, appliedFromDate, appliedToDate)
-        )
-      );
+      const exportRows = sortNewestFirst(list);
 
       if (!exportRows.length) {
         Swal.fire({

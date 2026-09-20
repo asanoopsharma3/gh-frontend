@@ -11,6 +11,18 @@ export const API_BASE_URL = trimTrailingSlash(
 
 export const ADMIN_API_BASE = `${API_BASE_URL}/admin`;
 
+export const ADMIN_API_BASES = [
+  ...new Set(
+    [
+      ADMIN_API_BASE,
+      `${SITE_URL}/admin-api`,
+      `${API_BASE_URL}/admin`,
+      "/admin-api",
+      "/api/admin",
+    ].filter(Boolean)
+  ),
+];
+
 export const apiUrl = (path = "") => {
   const normalizedPath = String(path).startsWith("/") ? path : `/${path}`;
   return `${API_BASE_URL}${normalizedPath}`;
