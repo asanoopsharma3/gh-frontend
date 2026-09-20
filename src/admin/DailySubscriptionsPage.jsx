@@ -4,6 +4,7 @@ import Swal from "sweetalert2";
 import { Download, RefreshCw } from "lucide-react";
 import "./DashboardPage.css";
 import { getDailySubscriptionApi } from "./adminApi";
+import { toGhs } from "./buildDailyReport";
 
 const ghanaToday = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Accra" });
@@ -104,7 +105,10 @@ export default function DailySubscriptionsPage() {
       Swal.fire({
         icon: "error",
         title: "Unable to load daily subscriptions",
-        text: err.response?.data?.message || err.message,
+        text:
+          (typeof err.response?.data?.message === "string" && err.response.data.message) ||
+          err.message ||
+          "Dashboard API se daily data load nahi ho paya.",
       });
     } finally {
       setLoading(false);
@@ -150,6 +154,7 @@ export default function DailySubscriptionsPage() {
     name: "Daily Subscription",
     amountGhs: 1,
   };
+  dailyPlan.amountGhs = toGhs(dailyPlan.amountGhs, 1) || 1;
 
   const cards = [
     {
