@@ -38,6 +38,14 @@
   margin-bottom: 30px;
 }
 
+.dashboard-card-grid-3 {
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+}
+
+.dashboard-actions-daily {
+  grid-template-columns: auto auto auto minmax(170px, 205px) minmax(170px, 205px) auto;
+}
+
 .dashboard-summary-card {
   display: flex;
   min-height: 138px;
@@ -315,6 +323,10 @@
 @media (max-width: 1200px) {
   .dashboard-card-grid {
     gap: 18px;
+  }
+
+  .dashboard-card-grid-3 {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
 
   .dashboard-table-header {

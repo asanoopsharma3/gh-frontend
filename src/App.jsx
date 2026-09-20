@@ -12,6 +12,7 @@ import ProtectedAdminRoute from "./admin/ProtectedAdminRoute";
 import AdminLoginPage from "./admin/AdminLoginPage";
 import AdminLayout from "./admin/AdminLayout";
 import DashboardPage from "./admin/DashboardPage";
+import DailySubscriptionsPage from "./admin/DailySubscriptionsPage";
 import AddQuizPage from "./admin/AddQuizPage";
 import QuizListPage from "./admin/QuizListPage";
 import Leaderboard from './component/Leaderboard';
@@ -123,6 +124,7 @@ function Layout() {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="dashboard" />} />
             <Route path="dashboard" element={<ProtectedAdminRoute><DashboardPage /></ProtectedAdminRoute>} />
+            <Route path="daily-subscriptions" element={<ProtectedAdminRoute><DailySubscriptionsPage /></ProtectedAdminRoute>} />
             <Route path="subscribers" element={<ProtectedAdminRoute><DashboardPage defaultReport="success" /></ProtectedAdminRoute>} />
             <Route path="renewal-subscribers" element={<ProtectedAdminRoute><DashboardPage defaultReport="renewal" /></ProtectedAdminRoute>} />
             <Route path="churn-subscribers" element={<ProtectedAdminRoute><DashboardPage defaultReport="churn" /></ProtectedAdminRoute>} />

@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
   Bell,
+  CalendarDays,
   ChevronDown,
   ChevronRight,
   LayoutDashboard,
@@ -22,6 +23,7 @@ const navGroups = [
   {
     items: [
       { label: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard },
+      { label: "Daily Subscriptions", path: "/admin/daily-subscriptions", icon: CalendarDays },
       { label: "Subscribers", path: "/admin/subscribers", icon: Users },
       { label: "Renewal Subscribers", path: "/admin/renewal-subscribers", icon: RefreshCw },
       { label: "Churn Subscribers", path: "/admin/churn-subscribers", icon: AlertTriangle },
