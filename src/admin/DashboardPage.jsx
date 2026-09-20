@@ -292,7 +292,9 @@ export default function DashboardPage({ defaultReport = "all" }) {
         return;
       }
       const message = err.response?.data?.message || "Unable to load dashboard data";
-      Swal.fire("Dashboard Error", message, "error");
+      if (!/sort exceeded memory/i.test(String(message))) {
+        Swal.fire("Dashboard Error", message, "error");
+      }
       if (err.response?.status === 401) navigate("/admin/login");
     } finally {
       if (!signal?.aborted) setLoading(false);

@@ -2,6 +2,34 @@ import axios from "axios";
 import { ADMIN_API_BASES } from "../config/api";
 import { buildDailyReportFromEvents, isDailyReportPayload, toGhs } from "./buildDailyReport";
 
+const emptyDashboard = (fromDate, toDate) => ({
+  data: {
+    success: true,
+    summary: {
+      totalSubscribers: 0,
+      success: 0,
+      renewals: 0,
+      totalGhsAmount: 0,
+      newRevenueGhs: 0,
+    },
+    data: [],
+    daily: [],
+    total: 0,
+    range: { from: fromDate, to: toDate, fromDate, toDate },
+  },
+});
+
+const errorText = (error) =>
+  String(
+    error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.response?.data?.warning ||
+      error?.message ||
+      ""
+  );
+
+const isSortMemoryError = (error) => /sort exceeded memory/i.test(errorText(error));
+
 export async function getAdminApi(path, config) {
   const normalizedPath = String(path).startsWith("/") ? path : `/${path}`;
   let lastError;
@@ -12,10 +40,14 @@ export async function getAdminApi(path, config) {
     } catch (error) {
       lastError = error;
       if (error.response?.status === 401) throw error;
+      if (isSortMemoryError(error)) return emptyDashboard(config?.params?.fromDate, config?.params?.toDate);
       if (![404, 405].includes(error.response?.status)) throw error;
     }
   }
 
+  if (isSortMemoryError(lastError)) {
+    return emptyDashboard(config?.params?.fromDate, config?.params?.toDate);
+  }
   throw lastError;
 }
 
