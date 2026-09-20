@@ -50,7 +50,9 @@ const classifyRow = (row = {}) => {
     return "already_subscribed";
   }
   if (offerCode === TOPUP_OFFER_CODE) return "topup";
-  if (["1", "11", "12", "13", "91", "112", "150", "186", "644", "1316", "failed", "failure", "fail", "d", "s"].includes(status)) {
+  if (
+    ["1", "11", "12", "13", "91", "112", "150", "186", "644", "1316", "failed", "failure", "fail", "d", "s", "inactive", "deactivated", "deactive", "suspended"].includes(status)
+  ) {
     return "failed";
   }
 

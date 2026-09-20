@@ -108,37 +108,18 @@ const getAdminData = async (path, config) => {
 const normalizeText = (value) => String(value || "").toLowerCase();
 
 const matchesReport = (row, reportKey) => {
-  if (!reportKey || reportKey === "all") return true;
+  if (!reportKey || reportKey === "all") return row.type ? row.type !== "other" : true;
 
   const status = normalizeText(row.status || row.rawStatus);
-  const lifecycle = normalizeText(row.lifecycle);
-  const reason = normalizeText(row.reason);
-  const source = normalizeText(row.source);
-  const blob = `${status} ${lifecycle} ${reason} ${source}`;
-
-  if (reportKey === "success") {
-    return (
-      ["success", "successful", "active", "subscribed", "a", "200", "0", "00"].includes(status) ||
-      ["activation", "first", "new", "subscribe", "sub"].some((key) => lifecycle === key || lifecycle.startsWith(`${key}`)) ||
-      source.includes("sdp") ||
-      source.includes("user")
-    ) && !["fail", "churn", "renew", "unsub"].some((key) => blob.includes(key));
+  const type = normalizeText(row.type);
+  if (["inactive", "failed", "fail", "churn", "unsub"].includes(status)) {
+    return reportKey === "failed" || reportKey === "churn";
   }
 
-  if (reportKey === "renewal") {
-    return blob.includes("renew");
-  }
-
-  if (reportKey === "churn") {
-    return ["churn", "inactive", "unsubscribed", "unsubscribe", "suspended", "insufficient"].some(
-      (key) => blob.includes(key)
-    );
-  }
-
-  if (reportKey === "failed") {
-    return blob.includes("fail");
-  }
-
+  if (reportKey === "success") return type === "new" || status === "success" || status === "active";
+  if (reportKey === "renewal") return type === "renewal" || status === "renewal";
+  if (reportKey === "churn") return type === "churn" || status === "churn";
+  if (reportKey === "failed") return type === "failed" || type === "unsub" || status === "failed";
   return true;
 };
 
@@ -179,17 +160,6 @@ const getRowAmount = (row) => {
   return Number.isFinite(fallback) ? fallback : 0;
 };
 
-const startOfToday = () => {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  return date;
-};
-
-const startOfMonth = () => {
-  const date = new Date();
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-};
-
 const mapApiSummary = (raw = {}) => ({
   totalSubscribers: Number(
     raw.totalSubscribers ??
@@ -219,40 +189,34 @@ const mapApiSummary = (raw = {}) => ({
 });
 
 const computeDashboardSummary = (list) => {
-  const todayStart = startOfToday();
-  const monthStart = startOfMonth();
-  const now = new Date();
+  const today = ghanaDateValue();
+  const monthStart = ghanaMonthStart();
   const monthlyMsisdn = new Set();
   const todayMsisdn = new Set();
   let todayRenewals = 0;
   let monthlyGhs = 0;
 
   for (const row of list) {
-    const created = new Date(row?.createdAt || row?.updatedAt);
-    if (Number.isNaN(created.getTime())) continue;
+    const type = normalizeText(row.type);
+    const status = normalizeText(row.status || row.rawStatus);
+    if (status === "inactive" || type === "failed" || type === "other" || type === "unsub") continue;
 
-    const amount = getRowAmount(row);
-    const isRenewal = matchesReport(row, "renewal");
-    const isFailed = matchesReport(row, "failed");
-    const isChurn = matchesReport(row, "churn");
-    const isSuccess =
-      matchesReport(row, "success") ||
-      (!isRenewal && !isFailed && !isChurn && Boolean(row.msisdn));
+    const day = row.createdAt
+      ? new Date(row.createdAt).toLocaleDateString("en-CA", { timeZone: "Africa/Accra" })
+      : "";
+    const isNew = type === "new" || (type !== "renewal" && matchesReport(row, "success"));
+    const isRenewal = type === "renewal" || matchesReport(row, "renewal");
+    if (!isNew && !isRenewal) continue;
 
-    if (created >= monthStart && created <= now) {
-      if ((isSuccess || isRenewal) && !isFailed) {
-        monthlyGhs += amount;
-      }
-      if (isSuccess && !isRenewal && row.msisdn) {
-        monthlyMsisdn.add(String(row.msisdn));
-      }
+    const amount = toGhs(getRowAmount(row), isNew || isRenewal ? 1 : 0);
+
+    if (day >= monthStart && day <= today) {
+      monthlyGhs += amount;
+      if (isNew && row.msisdn) monthlyMsisdn.add(String(row.msisdn));
     }
-
-    if (created >= todayStart && created <= now) {
+    if (day === today) {
       if (isRenewal) todayRenewals += 1;
-      if (isSuccess && !isRenewal && row.msisdn) {
-        todayMsisdn.add(String(row.msisdn));
-      }
+      if (isNew && row.msisdn) todayMsisdn.add(String(row.msisdn));
     }
   }
 
@@ -260,7 +224,7 @@ const computeDashboardSummary = (list) => {
     totalSubscribers: monthlyMsisdn.size,
     success: todayMsisdn.size,
     renewals: todayRenewals,
-    totalGhsAmount: monthlyGhs,
+    totalGhsAmount: Number(monthlyGhs.toFixed(2)),
   };
 };
 
@@ -314,12 +278,14 @@ export default function DashboardPage({ defaultReport = "all" }) {
       );
 
       setRows(sortNewestFirst(list));
-      if (Number.isFinite(total) && total >= 0) {
-        setServerPaginated(true);
-        setTotalRecords(total);
-      } else {
+      const useClientPaging = list.length > rowsPerPage;
+      if (useClientPaging) {
         setServerPaginated(false);
         setTotalRecords(list.length);
+      } else {
+        const paged = Number.isFinite(total) && total > list.length;
+        setServerPaginated(paged);
+        setTotalRecords(paged ? total : list.length);
       }
     } catch (err) {
       if (axios.isCancel?.(err) || err.code === "ERR_CANCELED" || err.name === "CanceledError") {
@@ -364,13 +330,11 @@ export default function DashboardPage({ defaultReport = "all" }) {
       const apiSummary = payload.summary || {};
       const computed = computeDashboardSummary(list);
       const mapped = mapApiSummary(apiSummary);
-      const hasApiSummary = Boolean(payload.summary);
-      setSummary({
-        totalSubscribers: hasApiSummary ? mapped.totalSubscribers : computed.totalSubscribers,
-        success: hasApiSummary ? mapped.success : computed.success,
-        renewals: hasApiSummary ? mapped.renewals : computed.renewals,
-        totalGhsAmount: hasApiSummary ? mapped.totalGhsAmount : computed.totalGhsAmount,
-      });
+      if (Array.isArray(payload.daily)) {
+        setSummary(mapped);
+      } else {
+        setSummary(computed);
+      }
     } catch (err) {
       if (axios.isCancel?.(err) || err.code === "ERR_CANCELED" || err.name === "CanceledError") {
         return;
