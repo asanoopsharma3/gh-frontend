@@ -9,7 +9,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import "./DashboardPage.css";
-import { getAdminApi, getDashboardRows, getSubscriberReport } from "./adminApi";
+import { getAdminApi, getCallbackReport, getDashboardRows, getSubscriberReport } from "./adminApi";
 import { toGhs } from "./buildDailyReport";
 import {
   EARLIEST_DATE,
@@ -112,13 +112,23 @@ const matchesReport = (row, reportKey) => {
 
   const status = normalizeText(row.status || row.rawStatus);
   const type = normalizeText(row.type);
-  if (["inactive", "failed", "fail", "churn", "unsub"].includes(status)) {
-    return reportKey === "failed" || reportKey === "churn";
-  }
+  const lifecycle = normalizeText(row.lifecycle || row.subscriberLifeCycle).replace(/[\s_-]+/g, "");
+  const reason = normalizeText(row.reason);
 
   if (reportKey === "success") return type === "new" || status === "success" || status === "active";
-  if (reportKey === "renewal") return type === "renewal" || status === "renewal";
-  if (reportKey === "churn") return type === "churn" || status === "churn";
+  if (reportKey === "renewal") {
+    return type === "renewal" || status === "renewal" || lifecycle.startsWith("ren") || lifecycle.includes("renew") || reason.includes("renew");
+  }
+  if (reportKey === "churn") {
+    if (lifecycle.startsWith("ren") || lifecycle.includes("unsub")) return false;
+    return (
+      type === "churn" ||
+      status === "churn" ||
+      ["2", "26", "29", "55", "63", "111", "g"].includes(status) ||
+      reason.includes("insufficient") ||
+      reason.includes("low balance")
+    );
+  }
   if (reportKey === "failed") return type === "failed" || type === "unsub" || status === "failed";
   return true;
 };
@@ -261,16 +271,23 @@ export default function DashboardPage({ defaultReport = "all" }) {
       const range = clampRangeFromStart(appliedFromDate, appliedToDate);
       const params = {
         page: currentPage,
-        limit: rowsPerPage,
+        limit: appliedReport === "renewal" || appliedReport === "churn" ? 500 : rowsPerPage,
         report: appliedReport,
         fromDate: range.from,
         toDate: range.to,
       };
 
-      const useSimpleList = appliedReport === "success" || appliedReport === "all";
-      const res = useSimpleList
-        ? await getSubscriberReport({ headers, params, signal })
-        : await getAdminData("/dashboard", { headers, params, signal });
+      const useSimpleList =
+        appliedReport === "success" ||
+        appliedReport === "all" ||
+        appliedReport === "renewal" ||
+        appliedReport === "churn";
+      const res =
+        appliedReport === "success" || appliedReport === "all"
+          ? await getSubscriberReport({ headers, params, signal })
+          : appliedReport === "renewal" || appliedReport === "churn"
+            ? await getCallbackReport({ headers, params, signal })
+            : await getAdminData("/dashboard", { headers, params, signal });
       const payload = res.data || {};
       const list = Array.isArray(payload.data) ? payload.data : [];
       const total = Number(

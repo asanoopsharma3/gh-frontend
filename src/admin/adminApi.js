@@ -69,14 +69,23 @@ const normalizePlanPrices = (res) => {
 };
 
 export async function getDashboardRows(config) {
+  const report = config.params?.report || "all";
   const params = {
     fromDate: config.params?.fromDate || config.params?.from,
     toDate: config.params?.toDate || config.params?.to,
-    report: config.params?.report || "all",
+    report,
     page: config.params?.page || 1,
-    limit: Math.min(Number(config.params?.limit) || 50, 50),
+    limit: Math.min(Number(config.params?.limit) || 50, report === "renewal" || report === "churn" ? 500 : 50),
   };
-  return getAdminApi("/dashboard", { ...config, params });
+  const res = await getAdminApi("/dashboard", { ...config, params });
+  const payload = res.data || {};
+  if (report === "renewal" && !payload.data?.length && payload.renewalRows?.length) {
+    return { ...res, data: { ...payload, data: payload.renewalRows, total: payload.renewalRows.length } };
+  }
+  if (report === "churn" && !payload.data?.length && payload.churnRows?.length) {
+    return { ...res, data: { ...payload, data: payload.churnRows, total: payload.churnRows.length } };
+  }
+  return res;
 }
 
 const mapActiveUser = (user) => ({
@@ -191,6 +200,78 @@ export async function getSubscriberReport(config) {
         total: 0,
       },
     };
+  }
+}
+
+const compact = (value) => String(value || "").trim().toLowerCase().replace(/[\s_-]+/g, "");
+
+const classifyCallbackRow = (row = {}) => {
+  const type = compact(row.type);
+  if (["new", "renewal", "churn", "failed", "unsub"].includes(type)) return type;
+  const status = compact(row.status || row.rawStatus || row.subscriptionStatus);
+  const lifecycle = compact(row.lifecycle || row.subscriberLifeCycle);
+  const reason = String(row.reason || "").toLowerCase();
+  if (lifecycle.includes("unsub") || status.includes("unsub")) return "unsub";
+  if (lifecycle.startsWith("ren") || lifecycle.includes("renew") || reason.includes("renew")) return "renewal";
+  if (
+    ["2", "26", "29", "55", "63", "111", "g"].includes(status) ||
+    reason.includes("insufficient") ||
+    reason.includes("low balance") ||
+    reason.includes("churn")
+  ) {
+    return "churn";
+  }
+  if (["a", "0", "00", "200", "ok", "active", "success"].includes(status) && (!lifecycle || ["sub", "new"].includes(lifecycle))) {
+    return "new";
+  }
+  return type || "other";
+};
+
+export async function getCallbackReport(config) {
+  const fromDate = config.params?.fromDate || config.params?.from;
+  const toDate = config.params?.toDate || config.params?.to;
+  const report = config.params?.report || "all";
+
+  try {
+    const res = await getDashboardRows({
+      ...config,
+      params: { fromDate, toDate, report, page: 1, limit: 50 },
+    });
+    const payload = res.data || {};
+    const named =
+      report === "renewal"
+        ? payload.renewalRows
+        : report === "churn"
+          ? payload.churnRows
+          : [];
+    const rows = uniqueRows(
+      [...(Array.isArray(named) ? named : []), ...(Array.isArray(payload.data) ? payload.data : [])].map((row) => {
+        const type = classifyCallbackRow(row);
+        return {
+          ...row,
+          type,
+          status: row.status || type,
+          rawStatus: row.rawStatus || row.status,
+          lifecycle: row.lifecycle || row.subscriberLifeCycle || "",
+        };
+      })
+    ).filter((row) => {
+      if (report === "renewal") return row.type === "renewal";
+      if (report === "churn") return row.type === "churn";
+      return true;
+    });
+
+    return {
+      data: {
+        ...payload,
+        data: rows,
+        total: rows.length || Number(payload.total || 0),
+        summary: payload.summary || {},
+      },
+    };
+  } catch (error) {
+    if (error.response?.status === 401) throw error;
+    return { data: { data: [], total: 0, summary: {} } };
   }
 }
 
