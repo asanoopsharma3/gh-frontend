@@ -9,7 +9,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import "./DashboardPage.css";
-import { getAdminApi } from "./adminApi";
+import { getAdminApi, getDashboardRows } from "./adminApi";
 import { toGhs } from "./buildDailyReport";
 import {
   EARLIEST_DATE,
@@ -100,7 +100,10 @@ const exportCsv = (rows) => {
   document.body.removeChild(link);
 };
 
-const getAdminData = async (path, config) => getAdminApi(path, config);
+const getAdminData = async (path, config) => {
+  if (path === "/dashboard") return getDashboardRows(config);
+  return getAdminApi(path, config);
+};
 
 const normalizeText = (value) => String(value || "").toLowerCase();
 
@@ -295,8 +298,6 @@ export default function DashboardPage({ defaultReport = "all" }) {
         page: currentPage,
         limit: rowsPerPage,
         report: appliedReport,
-        sort: "desc",
-        sortBy: "createdAt",
       };
       const range = clampRangeFromStart(appliedFromDate, appliedToDate);
       params.fromDate = range.from;
@@ -349,8 +350,6 @@ export default function DashboardPage({ defaultReport = "all" }) {
         page: 1,
         limit: 50,
         report: "all",
-        sort: "desc",
-        sortBy: "createdAt",
       };
       const range = clampRangeFromStart(appliedFromDate, appliedToDate);
       params.fromDate = range.from;
@@ -446,10 +445,8 @@ export default function DashboardPage({ defaultReport = "all" }) {
     try {
       const params = {
         page: 1,
-        limit: 500,
+        limit: 50,
         report: appliedReport,
-        sort: "desc",
-        sortBy: "createdAt",
       };
       const range = clampRangeFromStart(appliedFromDate, appliedToDate);
       params.fromDate = range.from;
