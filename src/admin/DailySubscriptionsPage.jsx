@@ -5,6 +5,12 @@ import { Download, RefreshCw } from "lucide-react";
 import "./DashboardPage.css";
 import { getDailySubscriptionApi } from "./adminApi";
 import { toGhs } from "./buildDailyReport";
+import {
+  EARLIEST_DATE,
+  clampRangeFromStart,
+  ghanaDateValue,
+  maxToFromFrom,
+} from "./dateRange";
 
 const ghanaToday = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Accra" });
@@ -120,23 +126,15 @@ export default function DailySubscriptionsPage() {
   }, [fetchReport]);
 
   const handleApplyFilter = () => {
-    const nextFrom = fromDate || today;
-    const nextTo = toDate || nextFrom;
-    if (nextFrom > nextTo) {
-      Swal.fire({
-        icon: "warning",
-        title: "Invalid Date Range",
-        text: "From date cannot be greater than To date.",
-        confirmButtonColor: "#1683f5",
-      });
-      return;
-    }
-    if (nextFrom === appliedFromDate && nextTo === appliedToDate) {
+    const range = clampRangeFromStart(fromDate || today, toDate || fromDate || today);
+    setFromDate(range.from);
+    setToDate(range.to);
+    if (range.from === appliedFromDate && range.to === appliedToDate) {
       fetchReport();
       return;
     }
-    setAppliedFromDate(nextFrom);
-    setAppliedToDate(nextTo);
+    setAppliedFromDate(range.from);
+    setAppliedToDate(range.to);
   };
 
   const handleToday = () => {
@@ -243,11 +241,27 @@ export default function DailySubscriptionsPage() {
               </button>
               <label className="dashboard-field">
                 <span>FROM</span>
-                <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+                <input
+                  type="date"
+                  value={fromDate}
+                  min={EARLIEST_DATE}
+                  max={ghanaDateValue()}
+                  onChange={(e) => {
+                    const nextFrom = e.target.value;
+                    setFromDate(nextFrom);
+                    setToDate(clampRangeFromStart(nextFrom, toDate).to);
+                  }}
+                />
               </label>
               <label className="dashboard-field">
                 <span>TO</span>
-                <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+                <input
+                  type="date"
+                  value={toDate}
+                  min={fromDate || EARLIEST_DATE}
+                  max={maxToFromFrom(fromDate || today)}
+                  onChange={(e) => setToDate(e.target.value)}
+                />
               </label>
               <button className="dashboard-filter-button dashboard-action-button" type="button" onClick={handleApplyFilter}>
                 Apply Filter

@@ -10,6 +10,14 @@ import {
 } from "lucide-react";
 import "./DashboardPage.css";
 import { getAdminApi } from "./adminApi";
+import { toGhs } from "./buildDailyReport";
+import {
+  EARLIEST_DATE,
+  clampRangeFromStart,
+  ghanaDateValue,
+  ghanaMonthStart,
+  maxToFromFrom,
+} from "./dateRange";
 
 const reportTabs = [
   { key: "all", label: "All Status" },
@@ -57,6 +65,7 @@ const formatDateTime = (value) => {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Africa/Accra",
   });
 };
 
@@ -132,10 +141,12 @@ const matchesReport = (row, reportKey) => {
 
 const matchesDateRange = (row, fromDate, toDate) => {
   if (!fromDate && !toDate) return true;
-  const created = row.createdAt ? new Date(row.createdAt) : null;
-  if (!created || Number.isNaN(created.getTime())) return false;
-  if (fromDate && created < new Date(`${fromDate}T00:00:00`)) return false;
-  if (toDate && created > new Date(`${toDate}T23:59:59`)) return false;
+  const stamp = row.createdAt || row.callbackTimestamp || row.updatedAt;
+  if (!stamp) return false;
+  const ghana = new Date(stamp).toLocaleDateString("en-CA", { timeZone: "Africa/Accra" });
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ghana)) return false;
+  if (fromDate && ghana < fromDate) return false;
+  if (toDate && ghana > toDate) return false;
   return true;
 };
 
@@ -174,40 +185,6 @@ const startOfToday = () => {
 const startOfMonth = () => {
   const date = new Date();
   return new Date(date.getFullYear(), date.getMonth(), 1);
-};
-
-const MAX_RANGE_DAYS = 31;
-
-const ghanaDateValue = (date = new Date()) =>
-  date.toLocaleDateString("en-CA", { timeZone: "Africa/Accra" });
-
-const ghanaMonthStart = () => {
-  const [year, month] = ghanaDateValue().split("-");
-  return `${year}-${month}-01`;
-};
-
-const shiftDate = (value, days) => {
-  const date = new Date(`${value}T00:00:00`);
-  date.setDate(date.getDate() + days);
-  return date.toLocaleDateString("en-CA");
-};
-
-const clampToOneMonth = (fromDate, toDate) => {
-  const today = ghanaDateValue();
-  let to = toDate || today;
-  let from = fromDate || ghanaMonthStart();
-
-  if (from > to) {
-    const swap = from;
-    from = to;
-    to = swap;
-  }
-
-  const minFrom = shiftDate(to, -(MAX_RANGE_DAYS - 1));
-  const clamped = from < minFrom;
-  if (clamped) from = minFrom;
-
-  return { from, to, clamped };
 };
 
 const mapApiSummary = (raw = {}) => ({
@@ -321,10 +298,9 @@ export default function DashboardPage({ defaultReport = "all" }) {
         sort: "desc",
         sortBy: "createdAt",
       };
-      const range = clampToOneMonth(appliedFromDate, appliedToDate);
+      const range = clampRangeFromStart(appliedFromDate, appliedToDate);
       params.fromDate = range.from;
       params.toDate = range.to;
-      params.date = range.from;
 
       const res = await getAdminData("/dashboard", { headers, params, signal });
       const payload = res.data || {};
@@ -376,7 +352,7 @@ export default function DashboardPage({ defaultReport = "all" }) {
         sort: "desc",
         sortBy: "createdAt",
       };
-      const range = clampToOneMonth(appliedFromDate, appliedToDate);
+      const range = clampRangeFromStart(appliedFromDate, appliedToDate);
       params.fromDate = range.from;
       params.toDate = range.to;
       const res = await getAdminData("/dashboard", {
@@ -475,10 +451,9 @@ export default function DashboardPage({ defaultReport = "all" }) {
         sort: "desc",
         sortBy: "createdAt",
       };
-      const range = clampToOneMonth(appliedFromDate, appliedToDate);
+      const range = clampRangeFromStart(appliedFromDate, appliedToDate);
       params.fromDate = range.from;
       params.toDate = range.to;
-      params.date = range.from;
 
       const res = await getAdminData("/dashboard", { headers, params });
       const list = Array.isArray(res.data?.data) ? res.data.data : [];
@@ -517,7 +492,7 @@ export default function DashboardPage({ defaultReport = "all" }) {
       return;
     }
 
-    const range = clampToOneMonth(fromDate, toDate);
+    const range = clampRangeFromStart(fromDate, toDate);
     setFromDate(range.from);
     setToDate(range.to);
     setAppliedFromDate(range.from);
@@ -526,11 +501,11 @@ export default function DashboardPage({ defaultReport = "all" }) {
     setCurrentPage(1);
     Swal.fire({
       icon: range.clamped ? "warning" : "success",
-      title: range.clamped ? "Range Limited To 1 Month" : "Filter Applied",
+      title: range.clamped ? "Range Limited To 31 Days" : "Filter Applied",
       text: range.clamped
-        ? `Dashboard loads at most ${MAX_RANGE_DAYS} days. Showing ${range.from} to ${range.to}.`
-        : "Dashboard data has been filtered successfully.",
-      timer: range.clamped ? 2200 : 1400,
+        ? `From ${range.from}, To can go up to ${range.maxTo} (31 days). Showing ${range.from} to ${range.to}.`
+        : "Subscriber data has been filtered for the selected dates.",
+      timer: range.clamped ? 2400 : 1400,
       showConfirmButton: false,
       confirmButtonColor: "#1683f5",
     });
@@ -566,7 +541,7 @@ export default function DashboardPage({ defaultReport = "all" }) {
             <div>
               <h2>{activeMeta.tableTitle}</h2>
               <p>
-                {recordCount} records found · {appliedFromDate} to {appliedToDate} (max 1 month)
+                {recordCount} records found · {appliedFromDate} to {appliedToDate} (any month, max 31 days)
               </p>
             </div>
 
@@ -588,9 +563,14 @@ export default function DashboardPage({ defaultReport = "all" }) {
                 <input
                   type="date"
                   value={fromDate}
-                  min={shiftDate(toDate || ghanaDateValue(), -(MAX_RANGE_DAYS - 1))}
-                  max={toDate || ghanaDateValue()}
-                  onChange={(e) => setFromDate(e.target.value)}
+                  min={EARLIEST_DATE}
+                  max={ghanaDateValue()}
+                  onChange={(e) => {
+                    const nextFrom = e.target.value;
+                    setFromDate(nextFrom);
+                    const range = clampRangeFromStart(nextFrom, toDate);
+                    setToDate(range.to);
+                  }}
                 />
               </label>
               <label className="dashboard-field">
@@ -598,8 +578,8 @@ export default function DashboardPage({ defaultReport = "all" }) {
                 <input
                   type="date"
                   value={toDate}
-                  min={fromDate || ghanaMonthStart()}
-                  max={ghanaDateValue()}
+                  min={fromDate || EARLIEST_DATE}
+                  max={maxToFromFrom(fromDate || ghanaDateValue())}
                   onChange={(e) => setToDate(e.target.value)}
                 />
               </label>
@@ -644,7 +624,7 @@ export default function DashboardPage({ defaultReport = "all" }) {
                         {row.status || row.rawStatus || "Unknown"}
                       </span>
                     </td>
-                    <td>GHC{Number(row.chargingAmount || 0).toFixed(2)}</td>
+                    <td>GHC{toGhs(row.chargingAmount, 0).toFixed(2)}</td>
                     <td>{formatDateTime(row.createdAt)}</td>
                   </tr>
                 ))}
