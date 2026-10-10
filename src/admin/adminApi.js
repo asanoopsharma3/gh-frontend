@@ -271,7 +271,7 @@ export async function getCallbackReport(config) {
     };
   } catch (error) {
     if (error.response?.status === 401) throw error;
-    return { data: { data: [], total: 0, summary: {} } };
+    throw error;
   }
 }
 

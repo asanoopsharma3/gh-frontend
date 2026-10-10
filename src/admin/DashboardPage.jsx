@@ -313,7 +313,14 @@ export default function DashboardPage({ defaultReport = "all" }) {
         return;
       }
       const message = err.response?.data?.message || "Unable to load dashboard data";
-      if (!/sort exceeded memory/i.test(String(message))) {
+      if (/sort exceeded memory/i.test(String(message))) {
+        Swal.fire({
+          icon: "error",
+          title: "Production backend purana hai",
+          text: "Mongo same hai, lekin live server abhi bhi sdplog sort kar raha hai. Backend git pull karke process restart karo — sirf frontend deploy se renewal/churn nahi aayenge.",
+          confirmButtonColor: "#1683f5",
+        });
+      } else {
         Swal.fire("Dashboard Error", message, "error");
       }
       if (err.response?.status === 401) navigate("/admin/login");

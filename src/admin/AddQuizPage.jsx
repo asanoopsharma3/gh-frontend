@@ -23,7 +23,7 @@ export default function AddQuizPage() {
     }
 
     const formData = new FormData();
-    formData.append("title", "npm");
+    formData.append("title", file.name.replace(/\.csv$/i, "") || "Quiz");
     formData.append("file", file);
 
     setUploading(true);

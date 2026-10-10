@@ -79,7 +79,7 @@ export default function Subscribe() {
           </h1>
           {LOCAL_SUBSCRIPTION_ENABLED && (
             <p className="subscribe-dev-note mt-3 rounded-lg border border-yellow-400/40 bg-yellow-400/10 px-3 py-2 text-sm text-yellow-100">
-              Local dev mode: subscription activates directly in your MongoDB without MTN billing.
+              Local dev mode: subscription activates directly in PostgreSQL without MTN billing.
             </p>
           )}
         </div>
