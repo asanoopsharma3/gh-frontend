@@ -77,12 +77,20 @@ export const LOCAL_HE_MSISDN = normalizeGhanaMsisdn(
 );
 
 export const getHeRedirectParams = (offerCode = INITIAL_OFFER_CODE) => {
-  const rawMsisdn = import.meta.env.DEV ? LOCAL_HE_MSISDN : "";
-  return {
+  const params = {
     OfferCode: offerCode,
     redirectUrl: buildHeCallbackUrl(),
-    msisdn: normalizeGhanaMsisdn(rawMsisdn),
   };
+
+  if (FORCE_HE && LOCAL_HE_MSISDN) {
+    params.mobileNumber = LOCAL_HE_MSISDN;
+    return params;
+  }
+
+  // CGNP returns "Mandatory Params Missing" when mobileNumber is absent.
+  // The HE proxy replaces this sentinel with the MSISDN from the mobile network.
+  params.mobileNumber = HE_MOBILE_NUMBER;
+  return params;
 };
 
 export const startHeSubscription = (offerCode = INITIAL_OFFER_CODE) => {

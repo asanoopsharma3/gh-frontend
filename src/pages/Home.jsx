@@ -62,7 +62,7 @@ function Home() {
         <form action={HE_REDIRECT_URL} method="get">
           <input type="hidden" name="OfferCode" value={heParams.OfferCode} />
           <input type="hidden" name="redirectUrl" value={heParams.redirectUrl} />
-          <input type="hidden" name="msisdn" value={heParams.msisdn} />
+          <input type="hidden" name="mobileNumber" value={heParams.mobileNumber} />
           <button
             type="submit"
             className="glow-on-hover home-subscribe-btn"
