@@ -58,9 +58,12 @@ const HE_CALLBACK_BASE = (
   import.meta.env.VITE_HE_CALLBACK_URL || CGW_BACKEND_CALLBACK_URL
 ).replace(/\/+$/, "");
 
-const buildHeCallbackUrl = () => {
-  const callbackUrl = new URL(HE_CALLBACK_BASE);
-  callbackUrl.searchParams.set("flow", "HE");
+// CGNP appends "?CGID=...&offerId=...&msisdn=...&status=..." onto redirectUrl.
+// A callback that already contains "?" makes CGNP drop OfferCode.
+const buildPlainCallbackUrl = (value = HE_CALLBACK_BASE) => {
+  const callbackUrl = new URL(value);
+  callbackUrl.search = "";
+  callbackUrl.hash = "";
   return callbackUrl.toString();
 };
 
@@ -77,20 +80,13 @@ export const LOCAL_HE_MSISDN = normalizeGhanaMsisdn(
 );
 
 export const getHeRedirectParams = (offerCode = INITIAL_OFFER_CODE) => {
-  const params = {
+  const number = FORCE_HE && LOCAL_HE_MSISDN ? LOCAL_HE_MSISDN : HE_MOBILE_NUMBER;
+  return {
     OfferCode: offerCode,
-    redirectUrl: buildHeCallbackUrl(),
+    redirectUrl: buildPlainCallbackUrl(),
+    mobileNumber: number,
+    msisdn: number,
   };
-
-  if (FORCE_HE && LOCAL_HE_MSISDN) {
-    params.mobileNumber = LOCAL_HE_MSISDN;
-    return params;
-  }
-
-  // CGNP returns "Mandatory Params Missing" when mobileNumber is absent.
-  // The HE proxy replaces this sentinel with the MSISDN from the mobile network.
-  params.mobileNumber = HE_MOBILE_NUMBER;
-  return params;
 };
 
 export const startHeSubscription = (offerCode = INITIAL_OFFER_CODE) => {
@@ -100,11 +96,9 @@ export const startHeSubscription = (offerCode = INITIAL_OFFER_CODE) => {
 };
 
 export const startNheSubscription = (msisdn, offerCode = INITIAL_OFFER_CODE) => {
-  const callbackUrl = new URL(CGW_BACKEND_CALLBACK_URL);
-  callbackUrl.searchParams.set("flow", "NHE");
   const params = new URLSearchParams({
     OfferCode: offerCode,
-    redirectUrl: callbackUrl.toString(),
+    redirectUrl: buildPlainCallbackUrl(CGW_BACKEND_CALLBACK_URL),
     mobileNumber: normalizeGhanaMsisdn(msisdn),
   });
 
