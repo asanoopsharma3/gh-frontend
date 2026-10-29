@@ -54,14 +54,24 @@ export const isMobileNetworkCandidate = () => {
   return isMobileDevice();
 };
 
-const HE_CALLBACK_BASE = (
-  import.meta.env.VITE_HE_CALLBACK_URL || CGW_BACKEND_CALLBACK_URL
-).replace(/\/+$/, "");
+const PRODUCTION_CALLBACK_URL = "https://ghsuperwinnings.com/api/callback";
 
-// CGNP appends "?CGID=...&offerId=...&msisdn=...&status=..." onto redirectUrl.
-// A callback that already contains "?" makes CGNP drop OfferCode.
-const buildPlainCallbackUrl = (value = HE_CALLBACK_BASE) => {
-  const callbackUrl = new URL(value);
+const isLocalHost = (hostname) =>
+  hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1";
+
+// MTN rejects localhost and any redirectUrl that already contains "?".
+// CGNP appends "?CGID=...&offerId=...&msisdn=...&status=..." itself.
+const buildPlainCallbackUrl = () => {
+  const preferred = import.meta.env.VITE_HE_CALLBACK_URL || CGW_BACKEND_CALLBACK_URL;
+  let callbackUrl;
+  try {
+    callbackUrl = new URL(preferred);
+  } catch {
+    callbackUrl = new URL(PRODUCTION_CALLBACK_URL);
+  }
+  if (isLocalHost(callbackUrl.hostname)) {
+    callbackUrl = new URL(PRODUCTION_CALLBACK_URL);
+  }
   callbackUrl.search = "";
   callbackUrl.hash = "";
   return callbackUrl.toString();
@@ -96,10 +106,12 @@ export const startHeSubscription = (offerCode = INITIAL_OFFER_CODE) => {
 };
 
 export const startNheSubscription = (msisdn, offerCode = INITIAL_OFFER_CODE) => {
+  const number = normalizeGhanaMsisdn(msisdn);
   const params = new URLSearchParams({
     OfferCode: offerCode,
-    redirectUrl: buildPlainCallbackUrl(CGW_BACKEND_CALLBACK_URL),
-    mobileNumber: normalizeGhanaMsisdn(msisdn),
+    redirectUrl: buildPlainCallbackUrl(),
+    mobileNumber: number,
+    msisdn: number,
   });
 
   window.location.href = `${CGW_NHE_PORTAL_URL}?${params.toString()}`;
