@@ -12,12 +12,12 @@ export const CGW_BACKEND_CALLBACK_URL = `${API_BASE_URL}/callback`;
 export const CGW_ENV = import.meta.env.VITE_CGW_ENV || "staging";
 
 export const HE_REDIRECT_URL =
-  import.meta.env.VITE_HE_REDIRECT_URL || "http://102.133.198.92/Redirect";
+  import.meta.env.VITE_HE_REDIRECT_URL || "http://20.238.64.101/Redirect";
 
 export const CGW_NHE_PORTAL_URL =
   CGW_ENV === "staging"
     ? "https://sitcg.mtn.com.gh/Portal"
-    : "https://cg.mtn.com.gh/Portal";
+    : "https://cgnp.mtn.com.gh/Portal";
 
 export const FORCE_HE =
   import.meta.env.DEV && import.meta.env.VITE_FORCE_HE === "true";
